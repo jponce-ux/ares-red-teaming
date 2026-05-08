@@ -1,0 +1,96 @@
+# generated: 2026-03-17T12:33:25.4232783-03:00
+# last_updated: 2026-03-17T12:33:25.4232783-03:00
+# project: endi
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-03-17T12:33:25.4232783-03:00
+last_updated: 2026-03-25T00:27:00-03:00
+project: endi
+project_key: NOKEY
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+# note: MVP-01.5 contract wording normalized across story, backlog, and PRD to require
+# externally observable command/conversation parity and deterministic structured tool errors.
+# note: Follow-up completed for runtime_error surfacing: CLI output now prints runtime_error
+# fields, conversation telemetry emits runtime_error payloads, and README links parity docs.
+
+development_status:
+  epic-mvp-00: done
+  mvp-00-1-repository-scaffold-and-ci-quality-baseline: done
+  epic-mvp-00-retrospective: optional
+
+  epic-mvp-01: done
+  mvp-01-1-dual-mode-cli-entry-and-input-classifier: done
+  mvp-01-2-deterministic-workflow-lifecycle-engine: done
+  mvp-01-3-bounded-conversational-tool-loop: done
+  mvp-01-4-safe-context-precedence-and-sensitive-state-handling: done
+  mvp-01-5-tool-contract-standardization-baseline: done
+  epic-mvp-01-retrospective: done
+
+  epic-mvp-02: done
+  mvp-02-1-capability-authorization-enforcement-layer: done
+  mvp-02-2-per-action-confirmation-for-sensitive-capabilities: done
+  mvp-02-3-approve-plan-execution-mode-for-trusted-automation: done
+  mvp-02-4-capability-to-backend-mapping-and-isolation-resolver: done
+  epic-mvp-02-retrospective: done
+
+  epic-mvp-03: done
+  mvp-03-1-sqlite-execution-history-schema-and-write-path: done
+  mvp-03-2-structured-json-logs-with-correlation-hierarchy: done
+  mvp-03-4-extended-correlation-for-conversational-tool-path: done
+  mvp-03-3-retention-and-auto-prune-policy-implementation: done
+  epic-mvp-03-retrospective: done
+
+  epic-mvp-04: done
+  mvp-04-1-capability-split-provider-contracts: done
+  mvp-04-2-initial-adapters-and-explicit-fallback-behavior: done
+  epic-mvp-04-retrospective: done
+
+  epic-mvp-05: done
+  mvp-05-1-rich-terminal-theming-and-readability-baseline: done
+  mvp-05-2-help-examples-and-command-introspection: done
+  mvp-05-3-confirmation-ux-and-operation-summary-consistency: done
+  epic-mvp-05-retrospective: done
+
+  epic-post-01: backlog
+  post-01-1-dual-source-plugin-discovery-and-registration: backlog
+  post-01-2-plugin-capability-version-checks-at-load-time: backlog
+  post-01-3-plugin-command-discoverability-parity: backlog
+  epic-post-01-retrospective: optional
+
+  epic-post-02: backlog
+  post-02-1-optional-graph-adapter-for-advanced-chains: backlog
+  post-02-2-multi-agent-review-chain-template: backlog
+  epic-post-02-retrospective: optional

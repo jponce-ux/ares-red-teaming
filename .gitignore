@@ -1,0 +1,12 @@
+# BMAD installation folders
+_bmad/
+.windsurf/
+.vscode/
+
+# Python virtual environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "endi"
+version = "0.1.0"
+description = "Enhanced Natural-language Directed Intelligence"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "ENDI Maintainers" }]
+dependencies = [
+  "typer>=0.12,<1",
+  "rich>=13,<14",
+  "prompt-toolkit>=3.0,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<9",
+  "mypy>=1.10,<2",
+  "ruff>=0.4,<1",
+]
+
+[project.scripts]
+endi = "endi.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["endi"]
+mypy_path = "src"
