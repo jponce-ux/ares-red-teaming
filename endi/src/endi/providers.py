@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 
 class ProviderCapability(StrEnum):
@@ -52,6 +56,21 @@ class ProviderResult:
     error: ProviderContractError | None
     provider_name: str | None
     capability: ProviderCapability | None
+
+
+class ProviderAdapterError(RuntimeError):
+    """Structured failure raised by concrete provider adapters."""
+
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        details: Mapping[str, object] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.details = dict(details or {})
 
 
 @runtime_checkable
@@ -103,6 +122,220 @@ class ProviderAdapterContract:
     contract_version: int
     provider: object
     metadata: dict[str, object] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ChatProviderConfig:
+    """Runtime chat provider selection and connection settings."""
+
+    identifier: str
+    model: str
+    base_url: str | None = None
+    api_key_env: str | None = None
+    timeout_seconds: float = 30.0
+    local_fallback_enabled: bool = False
+
+
+def _message_content(message: Mapping[str, object]) -> str:
+    content = message.get("content")
+    return content if isinstance(content, str) else ""
+
+
+def _json_http_post(
+    url: str,
+    payload: Mapping[str, object],
+    *,
+    headers: Mapping[str, str] | None = None,
+    timeout_seconds: float = 30.0,
+) -> dict[str, object]:
+    request = Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "content-type": "application/json",
+            **dict(headers or {}),
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=timeout_seconds) as response:
+            raw_body = response.read().decode("utf-8")
+    except HTTPError as exc:
+        raise ProviderAdapterError(
+            "provider_failure",
+            f"Provider returned HTTP {exc.code}.",
+            details={"status_code": exc.code, "url": url},
+        ) from exc
+    except TimeoutError as exc:
+        raise ProviderAdapterError(
+            "timeout",
+            "Provider request timed out.",
+            details={"url": url},
+        ) from exc
+    except URLError as exc:
+        raise ProviderAdapterError(
+            "provider_failure",
+            "Provider request failed.",
+            details={"url": url, "reason": str(exc.reason)},
+        ) from exc
+
+    try:
+        decoded = json.loads(raw_body)
+    except json.JSONDecodeError as exc:
+        raise ProviderAdapterError(
+            "provider_failure",
+            "Provider returned malformed JSON.",
+            details={"url": url},
+        ) from exc
+    if not isinstance(decoded, dict):
+        raise ProviderAdapterError(
+            "provider_failure",
+            "Provider JSON response must be an object.",
+            details={"url": url},
+        )
+    return decoded
+
+
+class OpenAIChatProvider:
+    """OpenAI-compatible chat-completions adapter."""
+
+    def __init__(
+        self,
+        *,
+        model: str = "gpt-4o-mini",
+        api_key: str | None = None,
+        base_url: str = "https://api.openai.com/v1",
+        timeout_seconds: float = 30.0,
+    ) -> None:
+        self._model = model
+        self._api_key = api_key
+        self._base_url = base_url.rstrip("/")
+        self._timeout_seconds = timeout_seconds
+
+    def generate_reply(
+        self,
+        messages: list[dict[str, object]],
+        *,
+        context: Mapping[str, object] | None = None,
+    ) -> object:
+        del context
+        if not self._api_key:
+            raise ProviderAdapterError(
+                "missing_credentials",
+                "OPENAI_API_KEY is required for OpenAI chat.",
+                details={"provider": "openai"},
+            )
+        response = _json_http_post(
+            f"{self._base_url}/chat/completions",
+            {"model": self._model, "messages": messages},
+            headers={"authorization": f"Bearer {self._api_key}"},
+            timeout_seconds=self._timeout_seconds,
+        )
+        choices = response.get("choices")
+        if not isinstance(choices, list) or not choices:
+            raise ProviderAdapterError("provider_failure", "OpenAI response has no choices.")
+        first_choice = choices[0]
+        if not isinstance(first_choice, dict):
+            raise ProviderAdapterError("provider_failure", "OpenAI choice is malformed.")
+        message = first_choice.get("message")
+        if not isinstance(message, dict):
+            raise ProviderAdapterError("provider_failure", "OpenAI message is malformed.")
+        return {
+            "provider": "openai",
+            "model": self._model,
+            "response_text": _message_content(message),
+            "raw": response,
+        }
+
+
+class AnthropicChatProvider:
+    """Anthropic messages API adapter."""
+
+    def __init__(
+        self,
+        *,
+        model: str = "claude-3.7-sonnet",
+        api_key: str | None = None,
+        base_url: str = "https://api.anthropic.com/v1",
+        timeout_seconds: float = 30.0,
+    ) -> None:
+        self._model = model
+        self._api_key = api_key
+        self._base_url = base_url.rstrip("/")
+        self._timeout_seconds = timeout_seconds
+
+    def generate_reply(
+        self,
+        messages: list[dict[str, object]],
+        *,
+        context: Mapping[str, object] | None = None,
+    ) -> object:
+        del context
+        if not self._api_key:
+            raise ProviderAdapterError(
+                "missing_credentials",
+                "ANTHROPIC_API_KEY is required for Anthropic chat.",
+                details={"provider": "anthropic"},
+            )
+        response = _json_http_post(
+            f"{self._base_url}/messages",
+            {"model": self._model, "max_tokens": 1024, "messages": messages},
+            headers={
+                "x-api-key": self._api_key,
+                "anthropic-version": "2023-06-01",
+            },
+            timeout_seconds=self._timeout_seconds,
+        )
+        content = response.get("content")
+        if not isinstance(content, list) or not content:
+            raise ProviderAdapterError("provider_failure", "Anthropic response has no content.")
+        first_block = content[0]
+        if not isinstance(first_block, dict):
+            raise ProviderAdapterError("provider_failure", "Anthropic content is malformed.")
+        text = first_block.get("text")
+        return {
+            "provider": "anthropic",
+            "model": self._model,
+            "response_text": text if isinstance(text, str) else "",
+            "raw": response,
+        }
+
+
+class OllamaChatProvider:
+    """Ollama local chat adapter."""
+
+    def __init__(
+        self,
+        *,
+        model: str = "llama3.1",
+        base_url: str = "http://localhost:11434",
+        timeout_seconds: float = 30.0,
+    ) -> None:
+        self._model = model
+        self._base_url = base_url.rstrip("/")
+        self._timeout_seconds = timeout_seconds
+
+    def generate_reply(
+        self,
+        messages: list[dict[str, object]],
+        *,
+        context: Mapping[str, object] | None = None,
+    ) -> object:
+        del context
+        response = _json_http_post(
+            f"{self._base_url}/api/chat",
+            {"model": self._model, "messages": messages, "stream": False},
+            timeout_seconds=self._timeout_seconds,
+        )
+        message = response.get("message")
+        if not isinstance(message, dict):
+            raise ProviderAdapterError("provider_failure", "Ollama response message is malformed.")
+        return {
+            "provider": "ollama",
+            "model": self._model,
+            "response_text": _message_content(message),
+            "raw": response,
+        }
 
 
 _SUPPORTED_CONTRACT_VERSIONS: dict[ProviderCapability, int] = {
@@ -185,6 +418,97 @@ def _resolve_local_fallback_enabled(context: Mapping[str, object] | None) -> boo
             return nested_enabled
 
     return False
+
+
+def resolve_chat_provider_config(
+    context: Mapping[str, object] | None = None,
+) -> ChatProviderConfig:
+    """Resolve chat provider config from context and environment defaults."""
+    provider_identifier = _resolve_provider_override(
+        capability=ProviderCapability.CHAT,
+        context=context,
+    )
+    model = provider_identifier.split(":", 1)[1]
+    base_url: str | None = None
+    api_key_env: str | None = None
+    timeout_seconds = 30.0
+
+    if context is not None:
+        provider_override = context.get("chat_provider")
+        if (
+            isinstance(provider_override, str)
+            and _is_vendor_qualified_identifier(provider_override)
+        ):
+            provider_identifier = provider_override.strip().lower()
+            model = provider_identifier.split(":", 1)[1]
+
+        model_override = context.get("chat_model")
+        if isinstance(model_override, str) and model_override.strip():
+            model = model_override.strip()
+
+        base_url_override = context.get("chat_base_url")
+        if isinstance(base_url_override, str) and base_url_override.strip():
+            base_url = base_url_override.strip()
+
+        api_key_env_override = context.get("chat_api_key_env")
+        if isinstance(api_key_env_override, str) and api_key_env_override.strip():
+            api_key_env = api_key_env_override.strip()
+
+        timeout_override = context.get("chat_timeout_seconds")
+        if isinstance(timeout_override, (int, float)) and timeout_override > 0:
+            timeout_seconds = float(timeout_override)
+
+    vendor = provider_identifier.split(":", 1)[0]
+    if api_key_env is None:
+        if vendor == "anthropic":
+            api_key_env = "ANTHROPIC_API_KEY"
+        elif vendor == "openai":
+            api_key_env = "OPENAI_API_KEY"
+
+    return ChatProviderConfig(
+        identifier=provider_identifier,
+        model=model,
+        base_url=base_url,
+        api_key_env=api_key_env,
+        timeout_seconds=timeout_seconds,
+        local_fallback_enabled=_resolve_local_fallback_enabled(context),
+    )
+
+
+def build_chat_provider(config: ChatProviderConfig) -> ChatProvider:
+    """Build a concrete chat provider for a resolved runtime config."""
+    vendor = config.identifier.split(":", 1)[0]
+    api_key = os.environ.get(config.api_key_env) if config.api_key_env is not None else None
+    if vendor == "anthropic":
+        return AnthropicChatProvider(
+            model=config.model,
+            api_key=api_key,
+            base_url=config.base_url or "https://api.anthropic.com/v1",
+            timeout_seconds=config.timeout_seconds,
+        )
+    if vendor == "ollama":
+        return OllamaChatProvider(
+            model=config.model,
+            base_url=config.base_url or "http://localhost:11434",
+            timeout_seconds=config.timeout_seconds,
+        )
+    return OpenAIChatProvider(
+        model=config.model,
+        api_key=api_key,
+        base_url=config.base_url or "https://api.openai.com/v1",
+        timeout_seconds=config.timeout_seconds,
+    )
+
+
+def extract_chat_response_text(provider_output: object) -> str:
+    """Extract response text from provider output using the ENDI adapter convention."""
+    if isinstance(provider_output, str):
+        return provider_output
+    if isinstance(provider_output, Mapping):
+        response_text = provider_output.get("response_text")
+        if isinstance(response_text, str):
+            return response_text
+    return str(provider_output)
 
 
 def provider_routing_metadata(

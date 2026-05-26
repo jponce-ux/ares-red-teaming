@@ -297,7 +297,7 @@ def _discoverability_rows(
         description = _discoverability_value(command.get("description"))
         arg_schema = _discoverability_value(command.get("arg_schema"))
         examples = _discoverability_examples(command.get("examples"))
-        if not name or not description or not arg_schema or not examples:
+        if not name or not description or not examples:
             continue
         if include_target:
             execution_target = _discoverability_value(command.get("execution_target"))
