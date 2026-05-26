@@ -8,6 +8,10 @@
 
 **Input**: User description: "$ARGUMENTS"
 
+**Project Scope**: [ARES root Rust project / ENDI auxiliary Python project / cross-project integration or NEEDS CLARIFICATION]
+
+**Implementation Boundary**: [For ARES, use root Rust workspace paths. For ENDI, use only paths under `endi/`. Spec artifacts remain under root `.specify/specs/`.]
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -109,6 +113,10 @@
 - **FR-RS-004**: Error handling MUST use `Result`, `thiserror` for library/domain errors, and `anyhow` at CLI or application boundaries.
 - **FR-RS-005**: Execution evidence, provider calls, evaluator decisions, and report generation MUST use `tracing` spans/events with secret redaction.
 - **FR-RS-006**: Code changes MUST be compatible with `cargo fmt`, `cargo clippy`, and `cargo test` quality gates.
+- **FR-BD-001**: Feature scope MUST explicitly identify whether implementation targets ARES, ENDI, or cross-project integration.
+- **FR-BD-002**: ENDI-targeted implementation MUST keep source, tests, docs, environment files, package metadata, and generated Python artifacts under `endi/`.
+- **FR-BD-003**: Spec Kit artifacts MUST remain under root `.specify/specs/` regardless of whether the implementation target is ARES or ENDI.
+- **FR-BD-004**: ARES-targeted implementation MUST default to Rust/Cargo/Tokio conventions unless the specification explicitly declares a bounded non-Rust artifact.
 
 *Example of marking unclear requirements:*
 
@@ -125,6 +133,8 @@
 - **Mitigation**: Prompt, guardrail, routing, filtering, or evaluator change linked to observed vulnerability evidence and replay result.
 - **Rust Crate**: Cargo workspace member with a single clear responsibility, public API boundary, dependency set, and test strategy.
 - **Async Attack Run**: Bounded Tokio execution unit that captures concurrency limits, timeouts, retry policy, cancellation path, and correlation identifier.
+- **Project Scope**: The ownership boundary for a feature: ARES root Rust project, ENDI auxiliary Python project, or explicit cross-project integration.
+- **ENDI Artifact**: Any implementation file, Python package file, local environment file, documentation, test, or generated artifact owned by the auxiliary ENDI project under `endi/`.
 
 ## Success Criteria *(mandatory)*
 
@@ -146,6 +156,8 @@
 - **SC-RT-005**: Show-and-tell can demonstrate the chatbot target, a successful attack, the generated report, and one mitigation replay.
 - **SC-RS-001**: Rust quality gates pass for changed crates: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, and `cargo test --workspace`.
 - **SC-RS-002**: Concurrent red teaming features include stress or async validation that demonstrates bounded resource use and predictable failure handling.
+- **SC-BD-001**: No ENDI-targeted implementation files are created outside `endi/`.
+- **SC-BD-002**: Root `.specify/specs/` contains the spec artifacts for the feature, including ENDI-targeted features.
 
 ## Assumptions
 

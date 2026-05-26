@@ -18,17 +18,19 @@
   the iteration process.
 -->
 
-**Language/Version**: Rust [stable toolchain + edition, e.g., Rust 1.xx / Edition 2024 or NEEDS CLARIFICATION]
+**Project Scope**: [ARES root Rust project / ENDI auxiliary Python project / cross-project integration or NEEDS CLARIFICATION]
+
+**Language/Version**: [ARES default: Rust stable toolchain + edition, e.g., Rust 1.xx / Edition 2024; ENDI scope: Python version from `endi/pyproject.toml`; or NEEDS CLARIFICATION]
 
 **Primary Dependencies**: [Cargo crates, e.g., tokio, clap, tracing, serde, anyhow, thiserror or NEEDS CLARIFICATION]
 
 **Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 
-**Testing**: cargo test, integration tests, stress/load tests, async/concurrency tests, clippy, rustfmt
+**Testing**: [ARES default: cargo test, integration tests, stress/load tests, async/concurrency tests, clippy, rustfmt; ENDI scope: pytest/ruff/mypy from `endi/`; or NEEDS CLARIFICATION]
 
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
 
-**Project Type**: Rust Cargo workspace / CLI red teaming platform
+**Project Type**: [ARES default: Rust Cargo workspace / CLI red teaming platform; ENDI scope: Python CLI assistant subproject]
 
 **Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
 
@@ -70,13 +72,21 @@
 - **Error handling and observability**: Plan uses `Result`, `thiserror` for
   domain/library errors, `anyhow` at application boundaries, and `tracing` for
   structured execution evidence.
+- **Project boundary**: Plan states whether the feature targets ARES, ENDI, or
+  a cross-project integration. ARES implementation paths stay at the repository
+  root Rust workspace; ENDI implementation paths stay under `endi/`.
+- **Spec location**: Plan keeps Spec Kit artifacts under root `.specify/specs/`
+  even when implementation work targets `endi/`.
+- **ENDI exception**: If scope is ENDI, Rust-specific gates are replaced by
+  ENDI's Python gates from `endi/pyproject.toml`, and no Python project files
+  are added outside `endi/`.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/[###-feature]/
+.specify/specs/[###-feature]/
 ├── plan.md              # This file (/speckit-plan command output)
 ├── research.md          # Phase 0 output (/speckit-plan command)
 ├── data-model.md        # Phase 1 output (/speckit-plan command)
@@ -118,7 +128,15 @@ tests/
 ├── async/
 └── fixtures/
 
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+# [REMOVE IF UNUSED] Option 2: ENDI auxiliary Python CLI project
+endi/
+├── pyproject.toml
+├── src/endi/
+├── tests/
+├── docs/
+└── _bmad-output/
+
+# [REMOVE IF UNUSED] Option 3: Web application (when "frontend" + "backend" detected)
 backend/
 ├── src/
 │   ├── models/
@@ -133,7 +151,7 @@ frontend/
 │   └── services/
 └── tests/
 
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+# [REMOVE IF UNUSED] Option 4: Mobile + API (when "iOS/Android" detected)
 api/
 └── [same as backend above]
 

@@ -7,15 +7,40 @@ shell commands, and other important information, read the current plan.
 
 ## Official Stack
 
-Rust is the official implementation language for this repository. AI agents
-MUST default to Rust for generated code, specs, examples, tests, and task
-plans unless the user explicitly requests a bounded non-Rust artifact such as
-Markdown documentation, JSONL fixtures, or generated reports.
+Rust is the official implementation language for ARES, the repository-root red
+teaming project. AI agents MUST default to Rust for ARES code, specs,
+examples, tests, and task plans unless the user explicitly requests a bounded
+non-Rust artifact such as Markdown documentation, JSONL fixtures, or generated
+reports.
 
 Use Cargo workspace conventions by default. Prefer a modular crate architecture
 with clear boundaries for CLI entrypoints, target adapters, attack fixtures,
 evaluators, provider clients, report generation, shared domain types, and
 stress/load tooling.
+
+## Project Boundaries
+
+The repository root is the ARES project root. ARES is the main project and the
+main topic of this repository.
+
+The `endi/` directory is a separate auxiliary Python CLI assistant project
+that shares this repository root. ENDI is not the ARES runtime. When the user
+asks for ENDI implementation work, keep all implementation files, tests, docs,
+package metadata, local virtual environments, caches, and generated artifacts
+inside `endi/`.
+
+Spec Kit artifacts remain centralized under root `.specify/specs/`, including
+specs for ENDI-targeted work. In specs, plans, and tasks, state the project
+scope explicitly: ARES, ENDI, or cross-project integration. If scope is not
+explicit and the paths do not point under `endi/`, assume ARES and use Rust.
+
+For ENDI-scoped work, use the Python conventions declared by `endi/pyproject.toml`
+and local commands run from `endi/`, such as:
+
+- `UV_CACHE_DIR=.uv-cache UV_PYTHON_INSTALL_DIR=.uv-python uv pip install -e '.[dev]' --python .venv/bin/python`
+- `.venv/bin/python -m pytest -q`
+- `.venv/bin/ruff check src tests`
+- `.venv/bin/mypy src`
 
 ## Rust Conventions
 
@@ -41,15 +66,16 @@ evidence.
 
 ## Quality Gates
 
-Generated plans and implementation tasks MUST include Cargo workflows:
+Generated ARES plans and implementation tasks MUST include Cargo workflows:
 
 - `cargo fmt --all --check`
 - `cargo clippy --workspace --all-targets --all-features`
 - `cargo test --workspace`
 
-Features that touch concurrency, load, provider resilience, attack execution,
-or evaluator behavior MUST include relevant unit tests, integration tests,
-stress/load tests, and async/concurrency tests.
+ARES features that touch concurrency, load, provider resilience, attack
+execution, or evaluator behavior MUST include relevant unit tests, integration
+tests, stress/load tests, and async/concurrency tests. ENDI-scoped plans and
+tasks MUST use ENDI's Python gates from `endi/pyproject.toml` instead.
 
 ## Security Defaults
 

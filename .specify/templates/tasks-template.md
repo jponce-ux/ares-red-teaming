@@ -9,10 +9,15 @@ description: "Task list template for feature implementation"
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
+**Project Scope**: Tasks MUST state whether the implementation target is ARES,
+ENDI, or a cross-project integration. Spec artifacts stay under root
+`.specify/specs/`. ENDI implementation tasks MUST use paths under `endi/`.
+
 **Tests**: For this Rust red teaming lab, include validation tasks for attack
 parsing, target rule behavior, evaluator decisions, report generation,
 mitigation replay, stress/load behavior, and async/concurrency behavior
-whenever the feature touches those areas.
+whenever the feature touches those areas. For ENDI-scoped tasks, use ENDI's
+Python gates from `endi/pyproject.toml` instead of Rust gates.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -26,6 +31,8 @@ whenever the feature touches those areas.
 
 - **Rust Cargo workspace + target chatbot**: `Cargo.toml`, `Cargo.lock`,
   `crates/`, `attacks/`, `reports/`, and `tests/` at repository root
+- **ENDI auxiliary Python project**: `endi/pyproject.toml`, `endi/src/endi/`,
+  `endi/tests/`, `endi/docs/`, and ENDI-owned artifacts under `endi/`
 - **Single project**: `src/`, `tests/` at repository root
 - **Web app**: `backend/src/`, `frontend/src/`
 - **Mobile**: `api/src/`, `ios/src/` or `android/src/`
@@ -57,6 +64,7 @@ whenever the feature touches those areas.
 - [ ] T001 Create Cargo workspace and crate structure per implementation plan
 - [ ] T002 Initialize Rust crates with Cargo dependencies and edition policy
 - [ ] T003 [P] Configure rustfmt, clippy, and workspace test commands
+- [ ] T003E [P] For ENDI-scoped work only, verify implementation paths stay under `endi/` and configure/use ENDI Python gates
 
 ---
 
@@ -265,6 +273,7 @@ With multiple developers:
 - Each user story should be independently completable and testable
 - Verify tests fail before implementing
 - Default to Rust, Cargo workspace crates, Tokio async, `tracing`, `Result`, `thiserror`, and `anyhow`
+- For ENDI-scoped tasks, keep implementation under `endi/` and use ENDI Python tooling
 - Keep concurrency bounded and test stress/failure paths for red teaming flows
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently

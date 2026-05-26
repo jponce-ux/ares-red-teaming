@@ -1,17 +1,16 @@
 <!--
 Sync Impact Report
-Version change: 1.0.0 -> 1.1.0
+Version change: 1.1.0 -> 1.1.1
 Modified principles:
 - I. Build a Defended Target Before Attacking -> unchanged
 - II. Categorized, Reproducible Attack Coverage -> unchanged
 - III. Evidence-Based Vulnerability Evaluation -> unchanged
 - IV. Mitigate, Replay, and Prove Closure -> unchanged
-- V. Local-First, Auditable CLI Workflow -> V. Rust-First, Local, Auditable CLI Workflow
+- V. Rust-First, Local, Auditable CLI Workflow -> V. ARES Rust-First, Local, Auditable CLI Workflow
 Added sections:
-- Official Rust Technology Stack
-- Rust Development Workflow and Quality Gates
+- Project Boundaries and Auxiliary ENDI Project
 Removed sections:
-- Development Workflow and Quality Gates
+- None
 Templates requiring updates:
 - ✅ updated .specify/templates/plan-template.md
 - ✅ updated .specify/templates/spec-template.md
@@ -67,26 +66,57 @@ evaluator changes, but they MUST be tied to observed attack evidence.
 Rationale: the lab outcome is learning which defenses work, not only listing
 failures.
 
-### V. Rust-First, Local, Auditable CLI Workflow
-The official implementation language is Rust. Production code, examples,
-generated specs, and automation defaults MUST assume Rust unless a feature
-specification documents a bounded non-Rust artifact such as generated reports
-or test data. The red teaming workflow MUST run locally without cloud
-infrastructure beyond the selected model provider. The CLI MUST support
-machine-readable attack input and produce a Markdown or HTML report with an
-executive summary, vulnerabilities by category, severities, successful prompts,
-and mitigation suggestions. Configuration MUST keep provider credentials
-outside tracked source files. Rationale: Rust gives the lab a memory-safe,
-strongly typed foundation for AI chat stress testing, concurrent red teaming,
-failure analysis, and repeatable local tooling.
+### V. ARES Rust-First, Local, Auditable CLI Workflow
+The official implementation language for the ARES red teaming project is Rust.
+Production code, examples, generated specs, and automation defaults for ARES
+MUST assume Rust unless a feature specification documents a bounded non-Rust
+artifact such as generated reports or test data. The red teaming workflow MUST
+run locally without cloud infrastructure beyond the selected model provider.
+The CLI MUST support machine-readable attack input and produce a Markdown or
+HTML report with an executive summary, vulnerabilities by category, severities,
+successful prompts, and mitigation suggestions. Configuration MUST keep
+provider credentials outside tracked source files. Rationale: Rust gives ARES
+a memory-safe, strongly typed foundation for AI chat stress testing,
+concurrent red teaming, failure analysis, and repeatable local tooling.
+
+## Project Boundaries and Auxiliary ENDI Project
+
+The repository root is the ARES project root. ARES is the main project and the
+main topic of this repository: a Rust-based red teaming and AI chat stress
+testing platform.
+
+The `endi/` directory is a separate auxiliary Python CLI assistant project that
+shares this repository root for convenience. ENDI is not the ARES runtime and
+is not governed by the Rust implementation requirement except where a
+cross-project integration specification explicitly says so. ENDI MAY continue
+to use Python, its own `pyproject.toml`, and its own local virtual environment
+inside `endi/`.
+
+Any implementation work for ENDI MUST stay inside `endi/`, including source,
+tests, documentation, local Python environment files, package metadata, and
+BMAD-derived ENDI artifacts. ENDI work MUST NOT introduce Python project files,
+virtual environments, package caches, or generated Python artifacts at the
+repository root.
+
+Spec Kit artifacts remain centralized at the repository root under
+`.specify/specs/`, even when a specification targets ENDI. A specification
+that targets ENDI MUST state that scope explicitly and MUST use implementation
+paths under `endi/`. A specification that does not explicitly target ENDI
+defaults to ARES and MUST follow the Rust-first ARES rules.
+
+Cross-project work MUST name both sides and keep ownership boundaries clear.
+ARES MAY call, wrap, or test ENDI only through a documented integration
+contract. ENDI MAY support ARES workflows only through files and interfaces
+defined in that integration contract.
 
 ## Official Rust Technology Stack
 
-All first-party executable code MUST be written in Rust using Cargo. The repo
-MUST use a Cargo workspace when there is more than one crate, with crates
+ARES first-party executable code MUST be written in Rust using Cargo. The ARES
+root MUST use a Cargo workspace when there is more than one crate, with crates
 organized around clear red teaming responsibilities such as CLI entrypoints,
 target adapters, attack fixtures, evaluators, report generation, provider
-clients, load/stress execution, and shared domain types.
+clients, load/stress execution, and shared domain types. This Rust stack rule
+does not apply to the separate ENDI Python project inside `endi/`.
 
 Rust edition policy MUST be explicit in each `Cargo.toml`. New crates MUST use
 the current stable Rust edition available to the project at creation time, and
@@ -206,4 +236,4 @@ section with the reason, rejected simpler alternative, risk, and expected
 follow-up. Outstanding constitution TODOs, if any, MUST be resolved before the
 affected feature is considered complete.
 
-**Version**: 1.1.0 | **Ratified**: 2026-05-26 | **Last Amended**: 2026-05-26
+**Version**: 1.1.1 | **Ratified**: 2026-05-26 | **Last Amended**: 2026-05-26
