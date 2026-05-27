@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report
-Version change: 1.1.0 -> 1.1.1
+Version change: 1.1.1 -> 1.2.0
 Modified principles:
 - I. Build a Defended Target Before Attacking -> unchanged
 - II. Categorized, Reproducible Attack Coverage -> unchanged
@@ -9,17 +9,18 @@ Modified principles:
 - V. Rust-First, Local, Auditable CLI Workflow -> V. ARES Rust-First, Local, Auditable CLI Workflow
 Added sections:
 - Project Boundaries and Auxiliary ENDI Project
+- Test-Driven Development Workflow
 Removed sections:
 - None
 Templates requiring updates:
-- ✅ updated .specify/templates/plan-template.md
-- ✅ updated .specify/templates/spec-template.md
-- ✅ updated .specify/templates/tasks-template.md
+- ⚠ .specify/templates/plan-template.md should include a required TDD plan section
+- ⚠ .specify/templates/spec-template.md should include a TDD/testability requirement
+- ⚠ .specify/templates/tasks-template.md should enforce red-green-refactor task ordering
 - ✅ reviewed .specify/templates/checklist-template.md
 - ✅ reviewed .specify/templates/commands/*.md (directory absent)
 - ✅ updated AGENTS.md
 Follow-up TODOs:
-- None
+- Update Spec Kit templates to make TDD default for future generated artifacts
 -->
 # RedTeam AI Security Lab Constitution
 
@@ -161,6 +162,40 @@ invariants protect it, and how it is tested. Real secrets, real customer data,
 and operationally harmful payloads MUST NOT be embedded in tests, fixtures,
 logs, or reports.
 
+## Test-Driven Development Workflow
+
+All active feature work MUST follow test-driven development. Before adding or
+changing production behavior, the team MUST create or update a deterministic
+unit test that captures the expected behavior, run the targeted test, and
+record the expected failure. Production code MUST NOT be added for that
+behavior until the failing test exists and has been run.
+
+The required implementation loop is:
+
+1. **Red**: create or update the failing unit test and run the targeted command.
+2. **Green**: implement the smallest production change needed to pass.
+3. **Refactor**: improve structure only after the targeted test is green.
+4. **Validate**: run the targeted test again, then the broader feature gates.
+
+Plans MUST include a `TDD plan` section that names the first tests to write,
+the expected failure, the production files allowed to change after the failure
+is observed, and the targeted red/green validation commands. Task plans MUST
+order behavior-changing work as `[TDD-RED]` test creation, `[TDD-RED]`
+expected-failure run, `[TDD-GREEN]` minimal implementation, `[TDD-GREEN]`
+pass confirmation, optional `[TDD-REFACTOR]`, and `[VALIDATE]` broader gates.
+
+Skipped, ignored, or unrun tests MUST NOT count as satisfying TDD unless the
+task documents the reason, the risk, and the follow-up needed. Documentation,
+decision records, fixture-only changes, and other non-production artifacts MAY
+use `[DOCS]` or `[VALIDATE]` tasks instead of `[TDD-*]`, but any behavior they
+enable MUST still be covered by failing tests before implementation.
+
+ARES work MUST prefer deterministic Rust unit tests before integration,
+stress, load, or end-to-end tests. ENDI work MUST prefer deterministic pytest
+unit tests before integration tests. Cross-project ARES/ENDI changes MUST test
+each side of the boundary and include contract or integration coverage for
+serialized subprocess input/output where behavior changes.
+
 ## Lab Scope and Constraints
 
 This repository exists for Lab 16: RedTeam - Seguridad y Red Teaming de
@@ -194,7 +229,7 @@ preserves local execution, reproducible attacks, auditable evidence, safe
 handling of credentials and test data, Rust memory safety, and bounded
 concurrency.
 
-Task plans MUST include explicit tasks for target behavior rules, manual attack
+Task plans MUST include explicit TDD-ordered tasks for target behavior rules, manual attack
 documentation, attack fixture creation, automated CLI execution, evaluator
 implementation, reporting, mitigation, replay verification, and reflection
 checkpoints. They MUST include Rust-specific tasks for crate/module structure,
@@ -205,7 +240,8 @@ decisions, report generation, mitigation regression, unit behavior,
 integration flows, stress/load behavior, and async/concurrency behavior where
 applicable.
 
-Every code change MUST pass `cargo fmt --all --check`, `cargo clippy
+Every behavior-changing code task MUST first pass its targeted red/green test
+cycle. Every code change MUST pass `cargo fmt --all --check`, `cargo clippy
 --workspace --all-targets --all-features`, and `cargo test --workspace` unless
 the plan documents why a narrower command is valid. Features that touch
 concurrent attack execution or provider resilience MUST add stress tests or
@@ -236,4 +272,4 @@ section with the reason, rejected simpler alternative, risk, and expected
 follow-up. Outstanding constitution TODOs, if any, MUST be resolved before the
 affected feature is considered complete.
 
-**Version**: 1.1.1 | **Ratified**: 2026-05-26 | **Last Amended**: 2026-05-26
+**Version**: 1.2.0 | **Ratified**: 2026-05-26 | **Last Amended**: 2026-05-27

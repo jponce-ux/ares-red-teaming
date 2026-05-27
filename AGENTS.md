@@ -67,6 +67,19 @@ evidence.
 
 ## Quality Gates
 
+All generated specs, plans, tasks, and implementation work MUST follow
+test-driven development. For every new behavior, bug fix, refactor with
+behavioral impact, or mitigation, agents MUST create or update the failing unit
+test first, run the targeted test to record the expected failure, implement the
+smallest production change needed to pass, rerun the targeted test, and only
+then refactor while keeping tests green.
+
+Task plans MUST make this red-green-refactor sequence explicit. A
+behavior-changing implementation task is not ready unless it is preceded by a
+test task that names the test file/module and targeted command. Skipped,
+ignored, or unrun tests do not satisfy TDD unless the task documents the
+reason and the remaining risk.
+
 Generated ARES plans and implementation tasks MUST include Cargo workflows:
 
 - `cargo fmt --all --check`
@@ -77,6 +90,11 @@ ARES features that touch concurrency, load, provider resilience, attack
 execution, or evaluator behavior MUST include relevant unit tests, integration
 tests, stress/load tests, and async/concurrency tests. ENDI-scoped plans and
 tasks MUST use ENDI's Python gates from `endi/pyproject.toml` instead.
+
+Prefer deterministic unit tests before integration, stress, load, or
+end-to-end tests. For cross-project ARES/ENDI work, add unit tests on each
+side of the contract where behavior changes, plus contract/integration tests
+for serialized subprocess input/output when applicable.
 
 ## Security Defaults
 
