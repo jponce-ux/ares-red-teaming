@@ -35,6 +35,7 @@ from endi.routing import (
     dispatch_input,
 )
 from endi.runtime_logging import write_json_event
+from endi.settings import load_chat_defaults, save_chat_defaults
 
 app = typer.Typer(help="ENDI terminal assistant")
 _console = Console()
@@ -86,13 +87,33 @@ def _provider_context(
     timeout_seconds: float,
     local_fallback: bool,
 ) -> dict[str, object]:
+    remembered_defaults = load_chat_defaults()
     context: dict[str, object] = {
-        "chat_timeout_seconds": timeout_seconds,
+        "chat_timeout_seconds": remembered_defaults.get(
+            "timeout_seconds",
+            timeout_seconds,
+        ),
         "provider_local_fallback_enabled": local_fallback,
     }
+    remembered_provider = remembered_defaults.get("provider")
+    remembered_model = remembered_defaults.get("model")
+    remembered_base_url = remembered_defaults.get("base_url")
+    remembered_api_key_env = remembered_defaults.get("api_key_env")
+    if isinstance(remembered_provider, str) and remembered_provider:
+        context["chat_provider"] = remembered_provider
+        context["provider_defaults"] = {"chat": remembered_provider}
+        context["chat_provider_source"] = "remembered"
+    if isinstance(remembered_model, str) and remembered_model:
+        context["chat_model"] = remembered_model
+    if isinstance(remembered_base_url, str) and remembered_base_url:
+        context["chat_base_url"] = remembered_base_url
+    if isinstance(remembered_api_key_env, str) and remembered_api_key_env:
+        context["chat_api_key_env"] = remembered_api_key_env
+
     if provider:
         context["chat_provider"] = provider
         context["provider_defaults"] = {"chat": provider}
+        context["chat_provider_source"] = "explicit"
     if model:
         context["chat_model"] = model
     if base_url:
@@ -100,6 +121,47 @@ def _provider_context(
     if api_key_env:
         context["chat_api_key_env"] = api_key_env
     return context
+
+
+def _provider_timeout_message(
+    *,
+    provider_identifier: str,
+    model: str,
+    timeout_seconds: float,
+    context: Mapping[str, object] | None,
+) -> str:
+    source = context.get("chat_provider_source") if context is not None else None
+    prefix = "Remembered provider" if source == "remembered" else "Provider"
+    return (
+        f"{prefix} {provider_identifier} model {model} timed out after "
+        f"{timeout_seconds:g}s. The provider is set, but the local model did not respond "
+        "in time. Try again, warm the model with `ollama run`, or set "
+        "`--timeout-seconds 120`."
+    )
+
+
+def _remember_provider_context(
+    *,
+    provider: str | None,
+    model: str | None,
+    base_url: str | None,
+    api_key_env: str | None,
+    timeout_seconds: float,
+) -> None:
+    if not any((provider, model, base_url, api_key_env)):
+        return
+
+    defaults = load_chat_defaults()
+    if provider:
+        defaults["provider"] = provider
+    if model:
+        defaults["model"] = model
+    if base_url:
+        defaults["base_url"] = base_url
+    if api_key_env:
+        defaults["api_key_env"] = api_key_env
+    defaults["timeout_seconds"] = timeout_seconds
+    save_chat_defaults(defaults)
 
 
 def _handle_conversation(text: str, *, context: Mapping[str, object] | None = None) -> str:
@@ -128,6 +190,13 @@ def _handle_conversation(text: str, *, context: Mapping[str, object] | None = No
             )
             return extract_chat_response_text(
                 fallback_provider.generate_reply(messages, context=context)
+            )
+        if exc.code == "timeout":
+            return _provider_timeout_message(
+                provider_identifier=provider_config.identifier,
+                model=provider_config.model,
+                timeout_seconds=provider_config.timeout_seconds,
+                context=context,
             )
         return f"Provider error ({exc.code}): {exc}"
 
@@ -242,7 +311,7 @@ def _result_envelope(result: object) -> dict[str, object]:
 
 
 def _print_json(result: object) -> None:
-    _console.print(json.dumps(_result_envelope(result), sort_keys=True))
+    print(json.dumps(_result_envelope(result), sort_keys=True))
 
 
 def _dispatch_input_with_context(
@@ -294,6 +363,13 @@ def _dispatch_submit(
         api_key_env=api_key_env,
         timeout_seconds=timeout_seconds,
         local_fallback=local_fallback,
+    )
+    _remember_provider_context(
+        provider=provider,
+        model=model,
+        base_url=base_url,
+        api_key_env=api_key_env,
+        timeout_seconds=timeout_seconds,
     )
     explicit_context = {
         **provider_context,
@@ -434,12 +510,54 @@ def submit(
     )
 
 
+@app.command("chat")
+def chat(
+    input_text: str | None = typer.Argument(None),
+    output: str = typer.Option("rich", "--output", help="Output format: rich or json."),
+    provider: str | None = typer.Option(None, "--provider", help="Chat provider identifier."),
+    model: str | None = typer.Option(None, "--model", help="Chat model override."),
+    base_url: str | None = typer.Option(None, "--base-url", help="Provider base URL override."),
+    api_key_env: str | None = typer.Option(None, "--api-key-env", help="Provider API key env var."),
+    timeout_seconds: float = typer.Option(30.0, "--timeout-seconds", help="Provider timeout."),
+    local_fallback: bool = typer.Option(False, "--local-fallback", help="Enable Ollama fallback."),
+    approve_plan: bool = typer.Option(False, "--approve-plan", help="Use approve-plan mode."),
+    non_interactive: bool = typer.Option(False, "--non-interactive", help="Disable prompts."),
+    log_json: str | None = typer.Option(None, "--log-json", help="Append JSON log events to path."),
+    plugin_dir: str | None = typer.Option(
+        None,
+        "--plugin-dir",
+        help="Directory of plugin manifests.",
+    ),
+) -> None:
+    """Submit one chat prompt and route it to conversation execution."""
+    submitted_input = input_text if input_text is not None else prompt("> ")
+    if output not in {"rich", "json"}:
+        raise typer.BadParameter("output must be 'rich' or 'json'.")
+    _dispatch_submit(
+        submitted_input,
+        output=output,
+        provider=provider,
+        model=model,
+        base_url=base_url,
+        api_key_env=api_key_env,
+        timeout_seconds=timeout_seconds,
+        local_fallback=local_fallback,
+        approve_plan=approve_plan,
+        non_interactive=non_interactive,
+        log_json=log_json,
+        plugin_dir=plugin_dir,
+    )
+
+
 @app.command("shell")
 def shell(
     output: str = typer.Option("rich", "--output", help="Output format: rich or json."),
     provider: str | None = typer.Option(None, "--provider", help="Chat provider identifier."),
     model: str | None = typer.Option(None, "--model", help="Chat model override."),
     base_url: str | None = typer.Option(None, "--base-url", help="Provider base URL override."),
+    api_key_env: str | None = typer.Option(None, "--api-key-env", help="Provider API key env var."),
+    timeout_seconds: float = typer.Option(30.0, "--timeout-seconds", help="Provider timeout."),
+    local_fallback: bool = typer.Option(False, "--local-fallback", help="Enable Ollama fallback."),
     plugin_dir: str | None = typer.Option(
         None,
         "--plugin-dir",
@@ -462,9 +580,9 @@ def shell(
             provider=provider,
             model=model,
             base_url=base_url,
-            api_key_env=None,
-            timeout_seconds=30.0,
-            local_fallback=False,
+            api_key_env=api_key_env,
+            timeout_seconds=timeout_seconds,
+            local_fallback=local_fallback,
             approve_plan=False,
             non_interactive=False,
             log_json=None,

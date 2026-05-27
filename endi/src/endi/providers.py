@@ -161,10 +161,16 @@ def _json_http_post(
         with urlopen(request, timeout=timeout_seconds) as response:
             raw_body = response.read().decode("utf-8")
     except HTTPError as exc:
+        error_body = _read_http_error_body(exc)
+        error_code = _http_provider_error_code(exc, error_body)
         raise ProviderAdapterError(
-            "provider_failure",
-            f"Provider returned HTTP {exc.code}.",
-            details={"status_code": exc.code, "url": url},
+            error_code,
+            _http_provider_error_message(exc, error_code, error_body),
+            details={
+                "status_code": exc.code,
+                "url": url,
+                **_http_provider_error_details(error_code, error_body),
+            },
         ) from exc
     except TimeoutError as exc:
         raise ProviderAdapterError(
@@ -174,7 +180,7 @@ def _json_http_post(
         ) from exc
     except URLError as exc:
         raise ProviderAdapterError(
-            "provider_failure",
+            "provider_connection_failed",
             "Provider request failed.",
             details={"url": url, "reason": str(exc.reason)},
         ) from exc
@@ -183,17 +189,64 @@ def _json_http_post(
         decoded = json.loads(raw_body)
     except json.JSONDecodeError as exc:
         raise ProviderAdapterError(
-            "provider_failure",
+            "provider_malformed_response",
             "Provider returned malformed JSON.",
             details={"url": url},
         ) from exc
     if not isinstance(decoded, dict):
         raise ProviderAdapterError(
-            "provider_failure",
+            "provider_malformed_response",
             "Provider JSON response must be an object.",
             details={"url": url},
         )
     return decoded
+
+
+def _read_http_error_body(exc: HTTPError) -> dict[str, object]:
+    try:
+        raw_body = exc.read().decode("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return {}
+    try:
+        decoded = json.loads(raw_body)
+    except json.JSONDecodeError:
+        return {"error": raw_body}
+    return decoded if isinstance(decoded, dict) else {}
+
+
+def _http_provider_error_code(exc: HTTPError, body: Mapping[str, object]) -> str:
+    error = body.get("error")
+    normalized_error = error.lower() if isinstance(error, str) else ""
+    if exc.code == 404 and "model" in normalized_error and "not found" in normalized_error:
+        return "provider_missing_model"
+    return "provider_failure"
+
+
+def _http_provider_error_message(
+    exc: HTTPError,
+    error_code: str,
+    body: Mapping[str, object],
+) -> str:
+    error = body.get("error")
+    if error_code == "provider_missing_model" and isinstance(error, str) and error:
+        return error
+    return f"Provider returned HTTP {exc.code}."
+
+
+def _http_provider_error_details(
+    error_code: str,
+    body: Mapping[str, object],
+) -> dict[str, object]:
+    if error_code != "provider_missing_model":
+        return {}
+    error = body.get("error")
+    details: dict[str, object] = {}
+    if isinstance(error, str) and error:
+        details["provider_error"] = error
+        match = re.search(r'model\s+"?([^"\s]+)"?\s+not found', error, re.IGNORECASE)
+        if match is not None:
+            details["model"] = match.group(1)
+    return details
 
 
 class OpenAIChatProvider:
@@ -329,11 +382,20 @@ class OllamaChatProvider:
         )
         message = response.get("message")
         if not isinstance(message, dict):
-            raise ProviderAdapterError("provider_failure", "Ollama response message is malformed.")
+            raise ProviderAdapterError(
+                "provider_malformed_response",
+                "Ollama response message is malformed.",
+            )
+        content = message.get("content")
+        if not isinstance(content, str):
+            raise ProviderAdapterError(
+                "provider_malformed_response",
+                "Ollama response message content is malformed.",
+            )
         return {
             "provider": "ollama",
             "model": self._model,
-            "response_text": _message_content(message),
+            "response_text": content,
             "raw": response,
         }
 
@@ -345,9 +407,7 @@ _SUPPORTED_CONTRACT_VERSIONS: dict[ProviderCapability, int] = {
 }
 
 _REQUIRED_METADATA_FIELDS = ("vendor", "adapter")
-_PROVIDER_IDENTIFIER_PATTERN = re.compile(
-    r"^[a-z0-9][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$"
-)
+_PROVIDER_IDENTIFIER_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*:[a-z0-9][a-z0-9._:-]*$")
 _DEFAULT_PROVIDER_SELECTIONS: dict[ProviderCapability, str] = {
     ProviderCapability.CHAT: "openai:gpt-4o-mini",
     ProviderCapability.TOOL_CALLING: "anthropic:claude-3.7-sonnet",
@@ -380,6 +440,28 @@ def _is_vendor_qualified_identifier(value: str) -> bool:
     return bool(_PROVIDER_IDENTIFIER_PATTERN.fullmatch(value.strip().lower()))
 
 
+def _is_supported_chat_provider_name(value: str) -> bool:
+    return value.strip().lower() in {"anthropic", "ollama", "openai"}
+
+
+def _vendor_default_model(vendor: str) -> str:
+    if vendor == "anthropic":
+        return "claude-3.7-sonnet"
+    if vendor == "ollama":
+        return "llama3.1"
+    return "gpt-4o-mini"
+
+
+def _qualified_chat_identifier(provider: str, model: str | None) -> str | None:
+    normalized_provider = provider.strip().lower()
+    if _is_vendor_qualified_identifier(normalized_provider):
+        return normalized_provider
+    if not _is_supported_chat_provider_name(normalized_provider):
+        return None
+    normalized_model = model.strip() if isinstance(model, str) and model.strip() else None
+    return f"{normalized_provider}:{normalized_model or _vendor_default_model(normalized_provider)}"
+
+
 def _resolve_provider_override(
     *,
     capability: ProviderCapability,
@@ -398,9 +480,11 @@ def _resolve_provider_override(
         return default_identifier
 
     normalized = override_value.strip().lower()
-    if not _is_vendor_qualified_identifier(normalized):
-        return default_identifier
-    return normalized
+    if _is_vendor_qualified_identifier(normalized):
+        return normalized
+    if _is_supported_chat_provider_name(normalized):
+        return f"{normalized}:{_vendor_default_model(normalized)}"
+    return default_identifier
 
 
 def _resolve_local_fallback_enabled(context: Mapping[str, object] | None) -> bool:
@@ -434,17 +518,24 @@ def resolve_chat_provider_config(
     timeout_seconds = 30.0
 
     if context is not None:
-        provider_override = context.get("chat_provider")
-        if (
-            isinstance(provider_override, str)
-            and _is_vendor_qualified_identifier(provider_override)
-        ):
-            provider_identifier = provider_override.strip().lower()
-            model = provider_identifier.split(":", 1)[1]
-
         model_override = context.get("chat_model")
-        if isinstance(model_override, str) and model_override.strip():
-            model = model_override.strip()
+        normalized_model_override = (
+            model_override.strip()
+            if isinstance(model_override, str) and model_override.strip()
+            else None
+        )
+        provider_override = context.get("chat_provider")
+        if isinstance(provider_override, str):
+            qualified_identifier = _qualified_chat_identifier(
+                provider_override,
+                normalized_model_override,
+            )
+            if qualified_identifier is not None:
+                provider_identifier = qualified_identifier
+                model = provider_identifier.split(":", 1)[1]
+
+        if normalized_model_override is not None:
+            model = normalized_model_override
 
         base_url_override = context.get("chat_base_url")
         if isinstance(base_url_override, str) and base_url_override.strip():
@@ -464,6 +555,8 @@ def resolve_chat_provider_config(
             api_key_env = "ANTHROPIC_API_KEY"
         elif vendor == "openai":
             api_key_env = "OPENAI_API_KEY"
+    if base_url is None and vendor == "ollama":
+        base_url = "http://localhost:11434"
 
     return ChatProviderConfig(
         identifier=provider_identifier,

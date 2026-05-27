@@ -63,6 +63,47 @@ At this stage, the most useful workflow is:
 2. Select the next story from `_bmad-output/implementation-artifacts/stories/`
 3. Implement incrementally and keep sprint status updated
 
+## Local Ollama Chat
+
+ENDI can route chat prompts to a local Ollama server. Ollama defaults to
+`http://localhost:11434`, and local models do not require API credentials.
+
+```bash
+.venv/bin/python -m endi.cli chat "Say hello in one sentence" --provider ollama --model llama3.2
+```
+
+Tagged model names are supported:
+
+```bash
+.venv/bin/python -m endi.cli chat "Summarize this test" --provider ollama --model gemma4:e2b
+```
+
+Use `--base-url` when Ollama is listening on a different local endpoint:
+
+```bash
+.venv/bin/python -m endi.cli chat "Say hello" --provider ollama --model mistral --base-url http://127.0.0.1:11434
+```
+
+For machine-readable output:
+
+```bash
+.venv/bin/python -m endi.cli chat "Say hello" --provider ollama --model llama3.2 --output json
+```
+
+When you explicitly select a chat provider, ENDI remembers that provider
+configuration for later invocations. For example, after this command:
+
+```bash
+.venv/bin/python -m endi.cli chat "Hello" --provider ollama --model granite4.1:3b
+```
+
+a later `submit` call uses the remembered local model instead of falling back
+to OpenAI:
+
+```bash
+.venv/bin/python -m endi.cli submit "test"
+```
+
 ## GitLab CI Baseline
 
 This project uses GitLab CI for merge request quality gates.
