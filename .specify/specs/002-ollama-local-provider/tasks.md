@@ -10,6 +10,10 @@
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing.
 
+## Historical Completion Status
+
+This task set is completed and retained as historical evidence. All listed tasks are checked off, including validation. Future Ollama provider changes must be handled in a new or amended active TDD task set rather than by reopening this completed artifact.
+
 ## Phase 1: Setup (Shared Infrastructure)
 
 **Purpose**: Verify existing ENDI project boundaries and current provider shape

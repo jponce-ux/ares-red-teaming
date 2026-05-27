@@ -2,6 +2,24 @@
 
 **Project Scope**: ARES root Rust project
 
+## TDD Execution Rules
+
+- Every behavior-changing production task in this file MUST be executed with the red-green-refactor loop.
+- Before editing production code, add or update a `[TDD-RED]` unit test covering the requirement or acceptance criterion.
+- Run the targeted test and record the expected failure before implementation.
+- Implement the smallest `[TDD-GREEN]` production change needed to pass that test.
+- Re-run the targeted test and record the pass before moving to the next behavior.
+- Refactor only after the targeted test is green, then re-run the targeted test.
+- Run broader validation at the end of each user-story phase and at final validation.
+- Do not mark a task complete if its test was skipped, ignored, or not run unless the reason is documented next to the task.
+
+### Required TDD task expansion
+
+For every `[TDD-RED]` task, execution MUST include two recorded steps before any `[TDD-GREEN]` task starts: create or update the failing unit test, then run the targeted test command and record the expected failure. For every `[TDD-GREEN]` task, execution MUST include the minimal production change and a targeted test run that confirms the behavior is green. If a behavior-changing task lacks an explicit `[TDD-RED]` predecessor, add that test task before implementation.
+
+**Accepted TDD shorthand**: A single `[TDD-RED]` task may include both creating the failing test and running the targeted command when the task text explicitly names the target test command or the command is listed immediately after it. A single `[TDD-GREEN]` task may include both the minimal production change and the targeted pass-confirmation command when the task text explicitly says to run and confirm the targeted test. Setup, dependency, and documentation-only tasks are not requirement coverage unless a later test or validation task exercises them.
+
+
 ## Phase 1: Setup
 
 - [ ] T001 Verify attack schema, config, and ENDI adapter modules exist
@@ -9,25 +27,26 @@
 
 ## Phase 2: User Story 1 - Execute Attack Fixtures Against ENDI (P1)
 
-- [ ] T003 [P] [US1] Add sequential execution test in `ares/tests/attack_runner.rs`
-- [ ] T004 [P] [US1] Add failure-continuation test in `ares/tests/attack_runner.rs`
-- [ ] T005 [US1] Define `AttackRunner`, `RunConfig`, `AttackRunResult`, and per-attack metadata in `ares/src/runner/`
-- [ ] T006 [US1] Implement sequential fixture execution through ENDI adapter in `ares/src/runner/mod.rs`
-- [ ] T007 [US1] Preserve run IDs, attack IDs, output, errors, and duration in `ares/src/runner/result.rs`
+- [ ] T003 [TDD-RED] Add sequential execution test in `ares/tests/attack_runner.rs`
+- [ ] T004 [TDD-RED] Add failure-continuation test in `ares/tests/attack_runner.rs`
+- [ ] T005 [TDD-GREEN] Define `AttackRunner`, `RunConfig`, `AttackRunResult`, and per-attack metadata in `ares/src/runner/`
+- [ ] T006 [TDD-GREEN] Implement sequential fixture execution through ENDI adapter in `ares/src/runner/mod.rs`
+- [ ] T007 [TDD-GREEN] [US1] Preserve run ID, attack ID, category, prompt, command, stdout, stderr, exit code, started time, duration, timeout flag, parsed ENDI output, and status in `ares/src/runner/result.rs`
 
 ## Phase 3: User Story 2 - Bound Concurrency and Timeouts (P2)
 
-- [ ] T008 [P] [US2] Add bounded concurrency test in `ares/tests/runner_concurrency.rs`
-- [ ] T009 [P] [US2] Add timeout test in `ares/tests/runner_concurrency.rs`
-- [ ] T010 [US2] Implement Tokio bounded concurrency in `ares/src/runner/mod.rs`
-- [ ] T011 [US2] Implement per-attack timeout handling in `ares/src/runner/mod.rs`
-- [ ] T012 [US2] Add structured `tracing` spans/events in `ares/src/runner/mod.rs`
+- [ ] T008 [TDD-RED] Add bounded concurrency test in `ares/tests/runner_concurrency.rs`
+- [ ] T009 [TDD-RED] Add timeout test in `ares/tests/runner_concurrency.rs`
+- [ ] T010 [TDD-GREEN] Implement Tokio bounded concurrency in `ares/src/runner/mod.rs`
+- [ ] T011 [TDD-GREEN] Implement per-attack timeout handling in `ares/src/runner/mod.rs`
+- [ ] T012 [TDD-GREEN] [US2] Map timeout, Ollama failure, missing model, and malformed response into target/harness status values in `ares/src/runner/result.rs`
+- [ ] T013 [TDD-GREEN] [US2] Add structured `tracing` spans/events in `ares/src/runner/mod.rs`
 
 ## Phase 4: Validation
 
-- [ ] T013 Run `cargo fmt --all --check`
-- [ ] T014 Run `cargo clippy --workspace --all-targets --all-features`
-- [ ] T015 Run `cargo test --workspace`
+- [ ] T014 [VALIDATE] Run `cargo fmt --all --check`
+- [ ] T015 [VALIDATE] Run `cargo clippy --workspace --all-targets --all-features`
+- [ ] T016 [VALIDATE] Run `cargo test --workspace`
 
 ## Dependencies
 

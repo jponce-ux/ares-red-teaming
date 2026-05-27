@@ -8,6 +8,10 @@
 
 ENDI must reliably route chat prompts to a locally running Ollama server when the user selects provider `ollama` and a model such as `gemma4:e2b`, `llama3.2`, or `mistral`. The implementation will extend the existing ENDI Python provider adapter and CLI command surface so unqualified provider selection (`--provider ollama --model ...`) resolves to an Ollama chat adapter, uses `http://localhost:11434` by default, exposes a `chat` command alias, and reports connection, missing-model, timeout, and malformed-response failures with explicit provider error categories.
 
+## Historical Completion Status
+
+This feature is treated as completed/historical. `tasks.md` records all tasks as complete, including pytest, ruff, mypy, documentation, and remembered-provider behavior. Do not retrofit this completed artifact into the active TDD workflow. New Ollama behavior changes must use a new or amended active TDD spec with failing tests first.
+
 ## Technical Context
 
 **Project Scope**: ENDI auxiliary Python project

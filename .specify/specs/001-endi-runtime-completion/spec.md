@@ -4,13 +4,15 @@
 
 **Created**: 2026-05-26
 
-**Status**: Draft
+**Status**: Active - TDD required before implementation resumes
 
 **Input**: User description: "create the spec-driven artifacts in root .specify/specs folder then implement them, you'll find all the information of the missing work here endi/MISSING_IMPLEMENTATION.md"
 
 **Project Scope**: ENDI auxiliary Python project
 
 **Implementation Boundary**: Implementation MUST stay under `endi/`. Spec artifacts remain under root `.specify/specs/`.
+
+**TDD Requirement**: Implementation for this active ENDI feature MUST use test-driven development. For every new behavior, bug fix, or behavior-changing modification, add or update a failing pytest unit test first, run the targeted test to record the expected failure, implement the smallest production change required to pass, then refactor only after the targeted test is green. Acceptance criteria are not complete until tests are traceable to the requirement they verify.
 
 ## User Scenarios & Testing *(mandatory)*
 

@@ -4,7 +4,7 @@
 
 ## Summary
 
-Implement an ARES-side Rust adapter that invokes ENDI using structured process arguments, captures outputs and metadata, enforces timeouts, and returns typed results/errors without changing ENDI.
+Implement an ARES-side Rust adapter that invokes ENDI Support Assistant using structured process arguments, captures stdout/stderr/exit/duration/parsed JSON metadata, enforces timeouts, and returns typed results/errors without changing ENDI.
 
 ## Technical Context
 
@@ -16,8 +16,18 @@ Implement an ARES-side Rust adapter that invokes ENDI using structured process a
 **Target Platform**: Local CLI
 **Project Type**: ARES Rust CLI module
 **Performance Goals**: Adapter respects configured timeout for every process call.
-**Constraints**: Do not modify ENDI; no shell interpolation; redact prompt in logs unless retained as evidence.
+**Constraints**: Do not modify ENDI; no shell interpolation; redact prompt in logs unless retained as evidence; do not import ENDI Python code.
 **Scale/Scope**: Single command execution API for later runner use.
+
+## TDD plan
+
+- **Red**: Create or update the smallest deterministic unit test before changing production code. The test MUST map to the specific FR/SC or user-story behavior being implemented.
+- **Expected failure**: Run the targeted test immediately after writing it and record the failing assertion, missing symbol, or unsupported behavior before implementation starts.
+- **Green**: Change only the minimum production files named by this plan and tasks to make the targeted test pass.
+- **Refactor**: Refactor only after the targeted test is green, keeping the same targeted test green throughout.
+- **Validation**: Run the targeted test first, then the broader feature validation command listed in `tasks.md`. A skipped or ignored test does not satisfy TDD unless the reason is documented in the task.
+- **Traceability**: Each behavior-changing implementation task MUST be immediately preceded by a `[TDD-RED]` test task and an expected-failure run task, and followed by a `[TDD-GREEN]` pass-confirmation task.
+- **Exact test files**: Use the concrete test file paths named by this feature `tasks.md` `[TDD-RED]` tasks; add new unit-test files there before production code when a behavior lacks coverage.
 
 ## Constitution Check
 
@@ -39,7 +49,7 @@ ares/src/targets/mod.rs
 ares/tests/endi_adapter.rs
 ```
 
-**Structure Decision**: Place ENDI process integration under ARES target adapter modules.
+**Structure Decision**: Place ENDI process integration under ARES target adapter modules. The MVP command defaults to `cd endi` followed by `.venv/bin/python -m endi.cli chat "<attack prompt>" --provider ollama --model granite4.1:3b --base-url http://localhost:11434 --timeout-seconds 60 --output json --non-interactive`. The adapter contract is governed by `.specify/specs/017-endi-target-profile-decisions/ares-endi-contract.md`.
 
 ## Complexity Tracking
 

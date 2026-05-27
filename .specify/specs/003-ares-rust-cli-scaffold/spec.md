@@ -5,7 +5,8 @@
 **Status**: Draft
 **Input**: `tickets/ares_tickets/01_create_ares_rust_cli_scaffold.md`
 **Project Scope**: ARES root Rust project
-**Implementation Boundary**: Implement at repository root and/or `ares/` Rust workspace paths only. Do not modify ENDI source.
+**Implementation Boundary**: Implement the root Cargo workspace and `ares/` Rust binary crate only. Do not modify ENDI source.
+**TDD Requirement**: Implementation for this feature MUST use test-driven development. For every new behavior, bug fix, or behavior-changing modification, add or update a failing unit test first, run the targeted test to record the expected failure, implement the smallest production change required to pass, then refactor only after the targeted test is green. Acceptance criteria are not complete until tests are traceable to the requirement they verify.
 
 ## User Scenarios & Testing
 
@@ -33,7 +34,7 @@ As a contributor, I can run documented Rust quality gates so future tickets star
 
 ### Edge Cases
 
-- The repository root is not yet a Cargo workspace.
+- The repository root is not yet a Cargo workspace and MUST become the workspace owner.
 - `ares/` already exists with partial files.
 - The user runs validation commands before any feature crates exist.
 - ENDI files are present but must remain unchanged.
@@ -46,6 +47,8 @@ As a contributor, I can run documented Rust quality gates so future tickets star
 - **FR-002**: ARES MUST expose useful help output.
 - **FR-003**: ARES MUST include baseline command structure for future target, attack, runner, evaluator, and reporting modules.
 - **FR-004**: ARES MUST use Cargo and Rust as the implementation stack.
+- **FR-004a**: The repository root MUST contain `Cargo.toml` with `[workspace]`, `members = ["ares"]`, and `resolver = "2"`.
+- **FR-004b**: `endi/` MUST NOT be included in the Cargo workspace because ENDI is a separate Python auxiliary project.
 - **FR-005**: ARES MUST use `clap` for CLI parsing.
 - **FR-006**: ARES MUST use `anyhow` at the CLI boundary.
 - **FR-007**: ARES MUST initialize a `tracing` logging foundation.
@@ -57,7 +60,7 @@ As a contributor, I can run documented Rust quality gates so future tickets star
 
 - **ARES CLI**: Runnable Rust binary used by red-team operators.
 - **CLI Command**: User-facing operation exposed by the ARES binary.
-- **Workspace Baseline**: Cargo package/workspace configuration and validation commands.
+- **Workspace Baseline**: Root Cargo workspace plus `ares/` binary crate configuration and validation commands.
 
 ## Success Criteria
 
@@ -68,5 +71,5 @@ As a contributor, I can run documented Rust quality gates so future tickets star
 
 ## Assumptions
 
-- The initial scaffold may live under `ares/` while the repository remains a single Git repository.
+- The initial scaffold lives in `ares/` as the first member of the root Cargo workspace while the repository remains a single Git repository.
 - Later tickets will add concrete target, attack, evaluator, runner, and report modules.

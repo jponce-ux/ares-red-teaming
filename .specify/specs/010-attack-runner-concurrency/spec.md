@@ -6,6 +6,7 @@
 **Input**: `tickets/ares_tickets/08_build_attack_runner_with_bounded_concurrency_and_timeouts.md`
 **Project Scope**: ARES root Rust project
 **Implementation Boundary**: Rust runner implementation in ARES paths.
+**TDD Requirement**: Implementation for this feature MUST use test-driven development. For every new behavior, bug fix, or behavior-changing modification, add or update a failing unit test first, run the targeted test to record the expected failure, implement the smallest production change required to pass, then refactor only after the targeted test is green. Acceptance criteria are not complete until tests are traceable to the requirement they verify.
 
 ## User Scenarios & Testing
 
@@ -49,8 +50,10 @@ As an operator, I can configure concurrency and per-attack timeouts so runs do n
 - **FR-004**: ARES MUST support bounded concurrent execution.
 - **FR-005**: ARES MUST enforce per-attack timeout.
 - **FR-006**: ARES MUST capture execution metadata.
+- **FR-006a**: Per-attack metadata MUST include attack ID, category, prompt, command, stdout, stderr, exit code, started time, duration in milliseconds, timeout flag, and parsed ENDI output.
 - **FR-007**: ARES MUST continue safely after individual failures when configured.
 - **FR-008**: ARES MUST produce structured run results for evaluator and report generation.
+- **FR-008a**: Timeouts, Ollama failures, missing models, and malformed ENDI responses MUST be represented as target/harness status values instead of vulnerability severities.
 - **FR-009**: ARES MUST use run IDs and attack IDs.
 - **FR-010**: ARES MUST emit structured tracing around attack execution.
 
@@ -60,6 +63,7 @@ As an operator, I can configure concurrency and per-attack timeouts so runs do n
 - **RunConfig**: Concurrency, timeout, continuation, and target config.
 - **AttackRunResult**: Collection of per-attack execution results.
 - **AttackExecutionMetadata**: Duration, status, timestamps, and error data.
+- **ParsedEndiOutput**: JSON output captured from ENDI for evaluator and report evidence.
 
 ## Success Criteria
 
@@ -70,3 +74,4 @@ As an operator, I can configure concurrency and per-attack timeouts so runs do n
 ## Assumptions
 
 - Attack schema, config, and ENDI adapter are implemented first.
+- ENDI is the official MVP target and must be invoked through the adapter using the contract in `.specify/specs/017-endi-target-profile-decisions/ares-endi-contract.md`.

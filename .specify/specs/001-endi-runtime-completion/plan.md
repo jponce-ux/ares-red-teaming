@@ -39,6 +39,16 @@ contracts where practical.
 
 **Scale/Scope**: Single-user local CLI runtime.
 
+## TDD plan
+
+- **Red**: Create or update the smallest deterministic pytest unit test before changing ENDI production code. The test MUST map to the specific FR/SC or user-story behavior being implemented.
+- **Expected failure**: Run the targeted pytest command immediately after writing the test and record the failing assertion, missing symbol, or unsupported behavior before implementation starts.
+- **Green**: Change only the minimum ENDI production files named by this plan and tasks to make the targeted test pass.
+- **Refactor**: Refactor only after the targeted test is green, keeping the same targeted test green throughout.
+- **Validation**: Run the targeted pytest first, then broader ENDI validation: `.venv/bin/python -m pytest -q`, `.venv/bin/ruff check src tests`, and `.venv/bin/mypy src` from `endi/`.
+- **Exact test files**: Use `endi/tests/test_provider_adapters.py`, `endi/tests/test_builtin_tools.py`, `endi/tests/test_cli_runtime.py`, and `endi/tests/test_plugins.py` as the primary red-phase files. Add a new unit-test file only when the behavior does not fit those modules.
+- **Traceability**: Each behavior-changing implementation task MUST be immediately preceded by a `[TDD-RED]` test task and an expected-failure run task, and followed by a `[TDD-GREEN]` pass-confirmation task.
+
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*

@@ -5,7 +5,7 @@
 
 ## Summary
 
-Create the initial ARES Rust CLI scaffold using Cargo, `clap`, `anyhow`, and `tracing`, with module placeholders for targets, attacks, runner, evaluator, and reporting. Keep ENDI untouched and avoid nested Git repositories.
+Create the initial ARES Rust CLI scaffold as a root Cargo workspace with `ares/` as the first binary crate, using `clap`, `anyhow`, and `tracing`, with module placeholders for targets, attacks, runner, evaluator, and reporting. Keep ENDI untouched and outside the Cargo workspace.
 
 ## Technical Context
 
@@ -15,10 +15,20 @@ Create the initial ARES Rust CLI scaffold using Cargo, `clap`, `anyhow`, and `tr
 **Storage**: N/A
 **Testing**: `cargo fmt --all --check`; `cargo clippy --workspace --all-targets --all-features`; `cargo test --workspace`
 **Target Platform**: Local CLI on developer workstation
-**Project Type**: Rust Cargo CLI workspace/package
+**Project Type**: Rust Cargo workspace with `ares/` binary crate
 **Performance Goals**: CLI startup and help must complete quickly enough for interactive use.
 **Constraints**: No ENDI source changes; no nested `.git/`; safe Rust; no secrets.
 **Scale/Scope**: Bootstrap command structure only.
+
+## TDD plan
+
+- **Red**: Create or update the smallest deterministic unit test before changing production code. The test MUST map to the specific FR/SC or user-story behavior being implemented.
+- **Expected failure**: Run the targeted test immediately after writing it and record the failing assertion, missing symbol, or unsupported behavior before implementation starts.
+- **Green**: Change only the minimum production files named by this plan and tasks to make the targeted test pass.
+- **Refactor**: Refactor only after the targeted test is green, keeping the same targeted test green throughout.
+- **Validation**: Run the targeted test first, then the broader feature validation command listed in `tasks.md`. A skipped or ignored test does not satisfy TDD unless the reason is documented in the task.
+- **Traceability**: Each behavior-changing implementation task MUST be immediately preceded by a `[TDD-RED]` test task and an expected-failure run task, and followed by a `[TDD-GREEN]` pass-confirmation task.
+- **Exact test files**: Use the concrete test file paths named by this feature `tasks.md` `[TDD-RED]` tasks; add new unit-test files there before production code when a behavior lacks coverage.
 
 ## Constitution Check
 
@@ -35,6 +45,8 @@ Create the initial ARES Rust CLI scaffold using Cargo, `clap`, `anyhow`, and `tr
 ## Project Structure
 
 ```text
+Cargo.toml
+Cargo.lock
 ares/
 ├── Cargo.toml
 └── src/
@@ -48,7 +60,7 @@ ares/
     └── reporting/
 ```
 
-**Structure Decision**: Use a Rust CLI package under `ares/` while keeping the top-level repository as the only Git repository. Future tickets may promote this to a root Cargo workspace if multiple crates are introduced.
+**Structure Decision**: Use a root Cargo workspace immediately with `members = ["ares"]` and `resolver = "2"`. Keep the top-level repository as the only Git repository. `endi/` remains a separate Python auxiliary project and is not a workspace member.
 
 ## Complexity Tracking
 

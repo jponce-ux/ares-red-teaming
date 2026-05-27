@@ -5,7 +5,8 @@
 **Status**: Draft
 **Input**: `tickets/ares_tickets/12_implement_mitigation_replay_workflow.md`
 **Project Scope**: Cross-project integration: ARES verifies mitigation effectiveness against ENDI.
-**Implementation Boundary**: Replay logic in ARES paths. Do not modify ENDI unless a separate ENDI ticket explicitly scopes that work.
+**Implementation Boundary**: Replay logic in ARES paths. The required MVP mitigation is implemented by `.specify/specs/018-endi-target-policy-mitigation/`; any ENDI implementation files for that mitigation must stay under `endi/`.
+**TDD Requirement**: Implementation for this feature MUST use test-driven development. For every new behavior, bug fix, or behavior-changing modification, add or update a failing unit test first, run the targeted test to record the expected failure, implement the smallest production change required to pass, then refactor only after the targeted test is green. Acceptance criteria are not complete until tests are traceable to the requirement they verify.
 
 ## User Scenarios & Testing
 
@@ -37,6 +38,7 @@ As a reviewer, I can see mitigation replay status in the Markdown report.
 - Attack IDs do not match.
 - Evaluator decision changes from success to inconclusive.
 - Post-mitigation execution error occurs.
+- ENDI mitigation changes target behavior but ARES replay still uses the same stable attack IDs.
 
 ## Requirements
 
@@ -45,10 +47,13 @@ As a reviewer, I can see mitigation replay status in the Markdown report.
 - **FR-001**: ARES MUST select relevant attacks for replay.
 - **FR-002**: ARES MUST run attacks before mitigation or load a previous baseline result.
 - **FR-003**: ARES MUST run attacks after mitigation.
+- **FR-003a**: The required MVP mitigation to replay MUST be an ENDI-side explicit target policy/system prompt applied before the user message.
+- **FR-003b**: ARES replay MUST treat `.specify/specs/018-endi-target-policy-mitigation/` as the ENDI-side mitigation dependency and MUST NOT duplicate ENDI implementation inside ARES.
 - **FR-004**: ARES MUST compare evaluator decisions using stable attack IDs.
 - **FR-005**: ARES MUST classify mitigation result as closed, partially reduced, unchanged, or regressed.
 - **FR-006**: ARES MUST include replay findings in the report.
 - **FR-007**: Replay logic MUST be independent from report rendering where practical.
+- **FR-008**: ARES MUST record that ENDI owns target behavior changes while ARES owns replay proof, evidence, evaluation, and reporting.
 
 ### Key Entities
 
@@ -56,6 +61,7 @@ As a reviewer, I can see mitigation replay status in the Markdown report.
 - **ReplayCandidate**: Attack selected for replay.
 - **ReplayComparison**: Before/after decision comparison.
 - **MitigationStatus**: Closed, partially reduced, unchanged, regressed.
+- **EndiTargetPolicyMitigation**: ENDI-side policy/system prompt enforcement applied before replay.
 
 ## Success Criteria
 
@@ -66,4 +72,4 @@ As a reviewer, I can see mitigation replay status in the Markdown report.
 
 ## Assumptions
 
-- Mitigations themselves are applied outside this ticket unless a separate ENDI ticket scopes them.
+- Product decisions require one concrete ENDI-side mitigation for MVP. The ENDI implementation is specified in `.specify/specs/018-endi-target-policy-mitigation/`; this feature owns replaying relevant attacks through ARES after that mitigation exists.

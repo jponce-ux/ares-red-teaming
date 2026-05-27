@@ -4,13 +4,15 @@
 
 **Created**: 2026-05-26
 
-**Status**: Draft
+**Status**: Completed - historical artifact
 
 **Input**: User description: "Add Ollama Local Model Connection to Endi CLI"
 
 **Project Scope**: ENDI auxiliary Python project
 
 **Implementation Boundary**: Implementation files, tests, docs, package metadata, virtual environments, caches, and generated artifacts for this feature stay under `endi/`. Spec Kit artifacts stay under root `.specify/specs/`.
+
+**TDD Status Decision**: Historical completed spec. All tasks in `tasks.md` are checked off, including tests and validation, so this artifact is not retrofitted into the active TDD workflow. Future changes to Ollama provider behavior MUST be created as a new active TDD spec or an explicit amendment with failing tests first.
 
 ## Clarifications
 
