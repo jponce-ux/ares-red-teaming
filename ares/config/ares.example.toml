@@ -11,6 +11,8 @@ output = "json"
 
 [runtime]
 max_concurrency = 1
+attack_fixture = "ares/fixtures/attacks/prompt_injection.jsonl"
+report_path = "ares/reports/latest.md"
 
 [evidence]
 output_directory = "ares/reports"

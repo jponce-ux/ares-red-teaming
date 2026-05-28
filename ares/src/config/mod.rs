@@ -40,6 +40,8 @@ pub struct EndiTargetConfig {
 #[serde(default)]
 pub struct RuntimeLimits {
     pub max_concurrency: usize,
+    pub attack_fixture: String,
+    pub report_path: String,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
@@ -56,6 +58,11 @@ pub struct CliConfigOverrides {
     pub base_url: Option<String>,
     pub timeout_seconds: Option<u64>,
     pub output_directory: Option<String>,
+    pub attack_fixture: Option<String>,
+    pub report_path: Option<String>,
+    pub python_executable: Option<String>,
+    pub working_directory: Option<String>,
+    pub max_concurrency: Option<usize>,
 }
 
 #[derive(Debug, Error)]
@@ -91,7 +98,11 @@ impl Default for EndiTargetConfig {
 
 impl Default for RuntimeLimits {
     fn default() -> Self {
-        Self { max_concurrency: 1 }
+        Self {
+            max_concurrency: 1,
+            attack_fixture: "ares/fixtures/attacks/prompt_injection.jsonl".to_string(),
+            report_path: "ares/reports/latest.md".to_string(),
+        }
     }
 }
 
@@ -128,6 +139,21 @@ impl AresConfig {
         if let Some(output_directory) = overrides.output_directory {
             self.evidence.output_directory = output_directory;
         }
+        if let Some(attack_fixture) = overrides.attack_fixture {
+            self.runtime.attack_fixture = attack_fixture;
+        }
+        if let Some(report_path) = overrides.report_path {
+            self.runtime.report_path = report_path;
+        }
+        if let Some(python_executable) = overrides.python_executable {
+            self.endi.command.python_executable = python_executable;
+        }
+        if let Some(working_directory) = overrides.working_directory {
+            self.endi.command.working_directory = working_directory;
+        }
+        if let Some(max_concurrency) = overrides.max_concurrency {
+            self.runtime.max_concurrency = max_concurrency;
+        }
         self
     }
 
@@ -150,6 +176,8 @@ impl AresConfig {
             "output_directory",
             &self.evidence.output_directory,
         );
+        require_non_empty(&mut errors, "attack_fixture", &self.runtime.attack_fixture);
+        require_non_empty(&mut errors, "report_path", &self.runtime.report_path);
         if !self.endi.target.base_url.starts_with("http://")
             && !self.endi.target.base_url.starts_with("https://")
         {

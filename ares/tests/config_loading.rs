@@ -21,6 +21,8 @@ output = "json"
 
 [runtime]
 max_concurrency = 4
+attack_fixture = "ares/fixtures/attacks/prompt_injection.jsonl"
+report_path = "ares/reports/latest.md"
 
 [evidence]
 output_directory = "ares/reports"
@@ -36,6 +38,11 @@ retain_prompts = true
     assert_eq!(config.endi.target.base_url, "http://localhost:11434");
     assert_eq!(config.endi.target.output, "json");
     assert_eq!(config.runtime.max_concurrency, 4);
+    assert_eq!(
+        config.runtime.attack_fixture,
+        "ares/fixtures/attacks/prompt_injection.jsonl"
+    );
+    assert_eq!(config.runtime.report_path, "ares/reports/latest.md");
 }
 
 #[test]
@@ -79,10 +86,23 @@ fn cli_overrides_take_precedence_over_file_config() {
         base_url: Some("http://127.0.0.1:11434".to_string()),
         timeout_seconds: Some(30),
         output_directory: Some("tmp/evidence".to_string()),
+        ..CliConfigOverrides::default()
     });
 
     assert_eq!(config.endi.target.model, "mistral");
     assert_eq!(config.endi.target.base_url, "http://127.0.0.1:11434");
     assert_eq!(config.endi.command.timeout_seconds, 30);
     assert_eq!(config.evidence.output_directory, "tmp/evidence");
+}
+
+#[test]
+fn cli_overrides_take_precedence_for_fixture_and_report_paths() {
+    let config = AresConfig::default().with_overrides(CliConfigOverrides {
+        attack_fixture: Some("tmp/attacks.jsonl".to_string()),
+        report_path: Some("tmp/report.md".to_string()),
+        ..CliConfigOverrides::default()
+    });
+
+    assert_eq!(config.runtime.attack_fixture, "tmp/attacks.jsonl");
+    assert_eq!(config.runtime.report_path, "tmp/report.md");
 }

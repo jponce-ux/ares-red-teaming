@@ -35,31 +35,34 @@ pub struct RunArgs {
     pub run_id: Option<String>,
 
     #[arg(long)]
-    pub fixture: String,
+    pub config: Option<String>,
 
     #[arg(long)]
-    pub report: String,
+    pub fixture: Option<String>,
 
-    #[arg(long, default_value_t = 1)]
-    pub concurrency: usize,
+    #[arg(long)]
+    pub report: Option<String>,
 
-    #[arg(long, default_value = "endi/.venv/bin/python")]
-    pub python_executable: String,
+    #[arg(long)]
+    pub concurrency: Option<usize>,
 
-    #[arg(long, default_value = "endi")]
-    pub working_directory: String,
+    #[arg(long)]
+    pub python_executable: Option<String>,
 
-    #[arg(long, default_value_t = 60)]
-    pub timeout_seconds: u64,
+    #[arg(long)]
+    pub working_directory: Option<String>,
 
-    #[arg(long, default_value = "ollama")]
-    pub provider: String,
+    #[arg(long)]
+    pub timeout_seconds: Option<u64>,
 
-    #[arg(long, default_value = "granite4.1:3b")]
-    pub model: String,
+    #[arg(long)]
+    pub provider: Option<String>,
 
-    #[arg(long, default_value = "http://localhost:11434")]
-    pub base_url: String,
+    #[arg(long)]
+    pub model: Option<String>,
+
+    #[arg(long)]
+    pub base_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Parser, PartialEq, Eq)]

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use ares::attacks::fixture::load_attack_fixtures;
 use ares::cli::{CliAction, HELP_TEXT, parse_action};
+use ares::config::{AresConfig, CliConfigOverrides};
 use ares::evaluator::{EvidenceRecord, evaluate};
 use ares::reporting::{Report, ReportArtifactStatus, ReportFinding, write_markdown_report};
 use ares::runner::{AttackRunner, RunConfig};
@@ -18,25 +19,34 @@ fn main() -> Result<()> {
         CliAction::Help => print!("{HELP_TEXT}"),
         CliAction::Version => println!("ares {}", env!("CARGO_PKG_VERSION")),
         CliAction::Run(args) => {
-            info!(command = "run", fixture = %args.fixture, "starting attack run");
-            let attacks = load_attack_fixtures(&PathBuf::from(&args.fixture))?;
+            let config = load_run_config(&args)?;
+            let fixture = args
+                .fixture
+                .clone()
+                .unwrap_or_else(|| config.runtime.attack_fixture.clone());
+            let report_path = args
+                .report
+                .clone()
+                .unwrap_or_else(|| config.runtime.report_path.clone());
+            info!(command = "run", fixture = %fixture, "starting attack run");
+            let attacks = load_attack_fixtures(&PathBuf::from(&fixture))?;
             let run_id = ares::attacks::domain::RunId::new(
                 args.run_id.clone().unwrap_or_else(generate_cli_run_id),
             )?;
             let client = EndiClient::new(EndiExecutionConfig {
-                python_executable: PathBuf::from(args.python_executable),
-                working_directory: PathBuf::from(args.working_directory),
-                timeout: Duration::from_secs(args.timeout_seconds),
-                provider: args.provider,
-                model: args.model,
-                base_url: args.base_url,
+                python_executable: PathBuf::from(config.endi.command.python_executable),
+                working_directory: PathBuf::from(config.endi.command.working_directory),
+                timeout: Duration::from_secs(config.endi.command.timeout_seconds),
+                provider: config.endi.target.provider,
+                model: config.endi.target.model,
+                base_url: config.endi.target.base_url,
                 ..EndiExecutionConfig::default()
             });
             let run = AttackRunner::new(client).run_bounded(
                 attacks,
                 RunConfig {
                     run_id: run_id.clone(),
-                    max_concurrency: args.concurrency,
+                    max_concurrency: config.runtime.max_concurrency,
                 },
             );
             let findings = run
@@ -62,10 +72,10 @@ fn main() -> Result<()> {
                 ),
                 replay: Vec::new(),
             };
-            write_markdown_report(&report, &PathBuf::from(&args.report))?;
+            write_markdown_report(&report, &PathBuf::from(&report_path))?;
             println!("ARES run complete");
             println!("Attacks: {}", run.results.len());
-            println!("Report: {}", args.report);
+            println!("Report: {report_path}");
         }
         CliAction::Stress(args) => {
             info!(command = "stress", "starting stress command");
@@ -91,6 +101,25 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn load_run_config(args: &ares::cli::RunArgs) -> Result<AresConfig> {
+    let config = match args.config.as_deref() {
+        Some(path) => AresConfig::load_from_file(&PathBuf::from(path))?,
+        None => AresConfig::default(),
+    };
+    Ok(config.with_overrides(CliConfigOverrides {
+        provider: args.provider.clone(),
+        model: args.model.clone(),
+        base_url: args.base_url.clone(),
+        timeout_seconds: args.timeout_seconds,
+        output_directory: None,
+        attack_fixture: args.fixture.clone(),
+        report_path: args.report.clone(),
+        python_executable: args.python_executable.clone(),
+        working_directory: args.working_directory.clone(),
+        max_concurrency: args.concurrency,
+    }))
 }
 
 fn generate_cli_run_id() -> String {
