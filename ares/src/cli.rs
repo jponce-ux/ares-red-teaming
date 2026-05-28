@@ -8,6 +8,7 @@ Usage: ares [COMMAND] [OPTIONS]
 Commands:
   help        Show this help text
   version     Show the ARES version
+  run         Execute attack fixtures and write a Markdown report
   stress      Run controlled ENDI stress tests
 ";
 
@@ -24,7 +25,41 @@ pub struct Cli {
 #[derive(Debug, Clone, Subcommand, PartialEq, Eq)]
 pub enum Command {
     Version,
+    Run(RunArgs),
     Stress(StressArgs),
+}
+
+#[derive(Debug, Clone, Parser, PartialEq, Eq)]
+pub struct RunArgs {
+    #[arg(long)]
+    pub run_id: Option<String>,
+
+    #[arg(long)]
+    pub fixture: String,
+
+    #[arg(long)]
+    pub report: String,
+
+    #[arg(long, default_value_t = 1)]
+    pub concurrency: usize,
+
+    #[arg(long, default_value = "endi/.venv/bin/python")]
+    pub python_executable: String,
+
+    #[arg(long, default_value = "endi")]
+    pub working_directory: String,
+
+    #[arg(long, default_value_t = 60)]
+    pub timeout_seconds: u64,
+
+    #[arg(long, default_value = "ollama")]
+    pub provider: String,
+
+    #[arg(long, default_value = "granite4.1:3b")]
+    pub model: String,
+
+    #[arg(long, default_value = "http://localhost:11434")]
+    pub base_url: String,
 }
 
 #[derive(Debug, Clone, Parser, PartialEq, Eq)]
@@ -61,6 +96,7 @@ pub struct StressArgs {
 pub enum CliAction {
     Help,
     Version,
+    Run(RunArgs),
     Stress(StressArgs),
 }
 
@@ -68,6 +104,7 @@ impl From<Option<Command>> for CliAction {
     fn from(command: Option<Command>) -> Self {
         match command {
             Some(Command::Version) => Self::Version,
+            Some(Command::Run(args)) => Self::Run(args),
             Some(Command::Stress(args)) => Self::Stress(args),
             None => Self::Help,
         }

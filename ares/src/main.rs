@@ -1,5 +1,9 @@
 use anyhow::Result;
+use ares::attacks::fixture::load_attack_fixtures;
 use ares::cli::{CliAction, HELP_TEXT, parse_action};
+use ares::evaluator::{EvidenceRecord, evaluate};
+use ares::reporting::{Report, ReportArtifactStatus, ReportFinding, write_markdown_report};
+use ares::runner::{AttackRunner, RunConfig};
 use ares::stress::{StressRunConfig, run_stress};
 use ares::targets::endi::{EndiClient, EndiExecutionConfig};
 use std::path::PathBuf;
@@ -13,6 +17,56 @@ fn main() -> Result<()> {
     match parse_action(&args) {
         CliAction::Help => print!("{HELP_TEXT}"),
         CliAction::Version => println!("ares {}", env!("CARGO_PKG_VERSION")),
+        CliAction::Run(args) => {
+            info!(command = "run", fixture = %args.fixture, "starting attack run");
+            let attacks = load_attack_fixtures(&PathBuf::from(&args.fixture))?;
+            let run_id = ares::attacks::domain::RunId::new(
+                args.run_id.clone().unwrap_or_else(generate_cli_run_id),
+            )?;
+            let client = EndiClient::new(EndiExecutionConfig {
+                python_executable: PathBuf::from(args.python_executable),
+                working_directory: PathBuf::from(args.working_directory),
+                timeout: Duration::from_secs(args.timeout_seconds),
+                provider: args.provider,
+                model: args.model,
+                base_url: args.base_url,
+                ..EndiExecutionConfig::default()
+            });
+            let run = AttackRunner::new(client).run_bounded(
+                attacks,
+                RunConfig {
+                    run_id: run_id.clone(),
+                    max_concurrency: args.concurrency,
+                },
+            );
+            let findings = run
+                .results
+                .iter()
+                .map(|result| {
+                    let evidence = EvidenceRecord::from_run_result(result, true);
+                    let decision = evaluate(&evidence);
+                    ReportFinding { evidence, decision }
+                })
+                .collect();
+            let report = Report {
+                title: "ARES Vulnerability Report".to_string(),
+                run_id: run_id.as_str().to_string(),
+                findings,
+                manual_attacks: ReportArtifactStatus::new(
+                    ".specify/specs/013-manual-attack-documentation/manual-attacks.md",
+                    true,
+                ),
+                reflections: ReportArtifactStatus::new(
+                    ".specify/specs/013-manual-attack-documentation/reflection-checkpoints.md",
+                    true,
+                ),
+                replay: Vec::new(),
+            };
+            write_markdown_report(&report, &PathBuf::from(&args.report))?;
+            println!("ARES run complete");
+            println!("Attacks: {}", run.results.len());
+            println!("Report: {}", args.report);
+        }
         CliAction::Stress(args) => {
             info!(command = "stress", "starting stress command");
             let config = StressRunConfig::new(args.requests, args.concurrency)?;
@@ -37,6 +91,14 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn generate_cli_run_id() -> String {
+    let epoch_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or(0);
+    format!("run-{epoch_ms}")
 }
 
 fn init_tracing() {
