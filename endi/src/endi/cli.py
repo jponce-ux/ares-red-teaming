@@ -29,6 +29,7 @@ from endi.providers import (
     resolve_chat_provider_config,
 )
 from endi.routing import (
+    CommandValidationError,
     DispatchResult,
     RouteKind,
     command_discoverability_catalog,
@@ -36,6 +37,7 @@ from endi.routing import (
 )
 from endi.runtime_logging import write_json_event
 from endi.settings import load_chat_defaults, save_chat_defaults
+from endi.target_policy import TargetPolicyError, load_target_policy
 
 app = typer.Typer(help="ENDI terminal assistant")
 _console = Console()
@@ -167,6 +169,9 @@ def _remember_provider_context(
 def _handle_conversation(text: str, *, context: Mapping[str, object] | None = None) -> str:
     """Generate a provider-backed response for free-text input."""
     messages: list[dict[str, object]] = [{"role": "user", "content": text}]
+    policy_content = context.get("target_policy_content") if context is not None else None
+    if isinstance(policy_content, str) and policy_content:
+        messages.insert(0, {"role": "system", "content": policy_content})
     provider_config = resolve_chat_provider_config(context)
     provider = build_chat_provider(provider_config)
     try:
@@ -278,7 +283,13 @@ def _result_envelope(result: object) -> dict[str, object]:
     envelope: dict[str, object] = {
         "route": route_value,
         "output": getattr(result, "output", None),
-        "status": "error" if getattr(result, "runtime_error", None) is not None else "success",
+        "status": (
+            "error"
+            if getattr(result, "runtime_error", None) is not None
+            or getattr(result, "validation_error", None) is not None
+            or getattr(result, "execution_error", None) is not None
+            else "success"
+        ),
     }
     validation_error = getattr(result, "validation_error", None)
     if validation_error is not None:
@@ -355,6 +366,7 @@ def _dispatch_submit(
     non_interactive: bool,
     log_json: str | None,
     plugin_dir: str | None,
+    system_prompt_file: str | None,
 ) -> None:
     provider_context = _provider_context(
         provider=provider,
@@ -364,6 +376,48 @@ def _dispatch_submit(
         timeout_seconds=timeout_seconds,
         local_fallback=local_fallback,
     )
+    if system_prompt_file is not None:
+        try:
+            target_policy = load_target_policy(system_prompt_file)
+        except TargetPolicyError as exc:
+            result = DispatchResult(
+                route=RouteKind.VALIDATION_ERROR,
+                output=None,
+                validation_error=CommandValidationError(
+                    code=exc.code,
+                    message=exc.message,
+                    hint="Provide a readable UTF-8 target policy file.",
+                ),
+                execution_error=None,
+                workflow_output=None,
+                conversation_output=None,
+                runtime_error=None,
+                resolved_context={},
+                session_snapshot={},
+                telemetry_payload={"target_policy_error": exc.code},
+            )
+            write_json_event(
+                log_json,
+                {
+                    "route": result.route.value,
+                    "status": "error",
+                    "output_present": False,
+                    "telemetry": result.telemetry_payload or {},
+                },
+            )
+            if output == "json":
+                _print_json(result)
+                raise typer.Exit(code=1) from None
+            _console.print(
+                build_error_panel(
+                    title="Validation Error",
+                    message=exc.message,
+                    details=("Hint: Provide a readable UTF-8 target policy file.",),
+                    profile=_terminal_profile(),
+                )
+            )
+            raise typer.Exit(code=1) from None
+        provider_context["target_policy_content"] = target_policy.content
     _remember_provider_context(
         provider=provider,
         model=model,
@@ -489,6 +543,11 @@ def submit(
         "--plugin-dir",
         help="Directory of plugin manifests.",
     ),
+    system_prompt_file: str | None = typer.Option(
+        None,
+        "--system-prompt-file",
+        help="Path to a target policy/system prompt Markdown file.",
+    ),
 ) -> None:
     """Submit one prompt and route it to command or conversation execution."""
     submitted_input = input_text if input_text is not None else prompt("> ")
@@ -507,6 +566,7 @@ def submit(
         non_interactive=non_interactive,
         log_json=log_json,
         plugin_dir=plugin_dir,
+        system_prompt_file=system_prompt_file,
     )
 
 
@@ -528,6 +588,11 @@ def chat(
         "--plugin-dir",
         help="Directory of plugin manifests.",
     ),
+    system_prompt_file: str | None = typer.Option(
+        None,
+        "--system-prompt-file",
+        help="Path to a target policy/system prompt Markdown file.",
+    ),
 ) -> None:
     """Submit one chat prompt and route it to conversation execution."""
     submitted_input = input_text if input_text is not None else prompt("> ")
@@ -546,6 +611,7 @@ def chat(
         non_interactive=non_interactive,
         log_json=log_json,
         plugin_dir=plugin_dir,
+        system_prompt_file=system_prompt_file,
     )
 
 
@@ -562,6 +628,11 @@ def shell(
         None,
         "--plugin-dir",
         help="Directory of plugin manifests.",
+    ),
+    system_prompt_file: str | None = typer.Option(
+        None,
+        "--system-prompt-file",
+        help="Path to a target policy/system prompt Markdown file.",
     ),
 ) -> None:
     """Run an interactive ENDI shell until /exit or /quit."""
@@ -587,6 +658,7 @@ def shell(
             non_interactive=False,
             log_json=None,
             plugin_dir=plugin_dir,
+            system_prompt_file=system_prompt_file,
         )
 
 

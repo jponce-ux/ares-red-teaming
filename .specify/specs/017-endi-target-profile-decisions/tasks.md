@@ -22,22 +22,27 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Phase 1: Target Profile
 
-- [ ] T001 [US1] Create ENDI target profile with target name, role/domain, provider/model/base URL, allowed examples, and disallowed examples in `.specify/specs/017-endi-target-profile-decisions/target-profile-endi.md`
-- [ ] T002 [DOCS] Define R1_SYSTEM_PROMPT_CONFIDENTIALITY through R5_NO_FAKE_SECRETS_OR_INTERNAL_DATA in `.specify/specs/017-endi-target-profile-decisions/target-profile-endi.md`
-- [ ] T003 [US1] Create planned TOML target profile shape for `ares/fixtures/targets/endi_support.toml` in `.specify/specs/017-endi-target-profile-decisions/target-profile-endi.md`
+- [x] T001 [US1] Create ENDI target profile with target name, role/domain, provider/model/base URL, allowed examples, and disallowed examples in `.specify/specs/017-endi-target-profile-decisions/target-profile-endi.md`
+- [x] T002 [DOCS] Define R1_SYSTEM_PROMPT_CONFIDENTIALITY through R5_NO_FAKE_SECRETS_OR_INTERNAL_DATA in `.specify/specs/017-endi-target-profile-decisions/target-profile-endi.md`
+- [x] T003 [US1] Create planned TOML target profile shape for `ares/fixtures/targets/endi_support.toml` in `.specify/specs/017-endi-target-profile-decisions/target-profile-endi.md`
 
 ## Phase 2: Evaluation and Severity
 
-- [ ] T004 [US2] Create severity rubric with Critical/High/Medium/Low/N/A criteria in `.specify/specs/017-endi-target-profile-decisions/severity-rubric.md`
-- [ ] T005 [DOCS] Define result statuses blocked/success/partial/inconclusive/target_error/harness_error in `.specify/specs/017-endi-target-profile-decisions/evaluator-success-criteria.md`
-- [ ] T006 [DOCS] Define category-specific success rules for prompt injection, jailbreak, system prompt extraction, malicious-code simulation, and out-of-domain testing in `.specify/specs/017-endi-target-profile-decisions/evaluator-success-criteria.md`
+- [x] T004 [US2] Create severity rubric with Critical/High/Medium/Low/N/A criteria in `.specify/specs/017-endi-target-profile-decisions/severity-rubric.md`
+- [x] T005 [DOCS] Define result statuses blocked/success/partial/inconclusive/target_error/harness_error in `.specify/specs/017-endi-target-profile-decisions/evaluator-success-criteria.md`
+- [x] T006 [DOCS] Define category-specific success rules for prompt injection, jailbreak, system prompt extraction, malicious-code simulation, and out-of-domain testing in `.specify/specs/017-endi-target-profile-decisions/evaluator-success-criteria.md`
 
 ## Phase 3: Mitigation and Integration Contract
 
-- [ ] T007 [US3] Document first MVP mitigation as ENDI target policy/system prompt enforcement in `.specify/specs/017-endi-target-profile-decisions/target-profile-endi.md`
-- [ ] T008 [DOCS] Define ARES-to-ENDI subprocess JSON contract and required captured fields in `.specify/specs/017-endi-target-profile-decisions/ares-endi-contract.md`
-- [ ] T009 [US3] Document root Cargo workspace decision and implementation order in `.specify/specs/017-endi-target-profile-decisions/ares-endi-contract.md`
+- [x] T007 [US3] Document first MVP mitigation as ENDI target policy/system prompt enforcement in `.specify/specs/017-endi-target-profile-decisions/target-profile-endi.md`
+- [x] T008 [DOCS] Define ARES-to-ENDI subprocess JSON contract and required captured fields in `.specify/specs/017-endi-target-profile-decisions/ares-endi-contract.md`
+- [x] T009 [US3] Document root Cargo workspace decision and implementation order in `.specify/specs/017-endi-target-profile-decisions/ares-endi-contract.md`
 
 ## Phase 4: Validation
 
-- [ ] T010 [VALIDATE] Review downstream specs 003-016 for references to these decisions
+- [x] T010 [VALIDATE] Review downstream specs 003-016 for references to these decisions
+
+## Implementation Record
+
+- 2026-05-27: Verified target profile, R1-R5 rules, severity rubric, evaluator success criteria, ARES-to-ENDI subprocess contract, root Cargo workspace decision, and implementation order are present and aligned with `.specify/memory/ba-pm-decisions.md`. No production code changed for this decision artifact.
+

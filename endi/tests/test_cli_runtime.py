@@ -296,3 +296,67 @@ def test_remembered_provider_timeout_is_actionable(monkeypatch) -> None:
         "after 45s. The provider is set, but the local model did not respond in time. "
         "Try again, warm the model with `ollama run`, or set `--timeout-seconds 120`."
     )
+
+
+def test_chat_system_prompt_file_prepends_policy(monkeypatch, tmp_path) -> None:
+    observed = {}
+    policy_path = tmp_path / "target_policy.md"
+    policy_path.write_text("Stay inside ENDI support scope.", encoding="utf-8")
+
+    class ObservingProvider:
+        def generate_reply(self, messages, *, context=None):
+            del context
+            observed["messages"] = messages
+            return {"response_text": "policy applied", "provider": "fake"}
+
+    monkeypatch.setattr(cli, "build_chat_provider", lambda config: ObservingProvider())
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app,
+        [
+            "chat",
+            "Hello",
+            "--provider",
+            "ollama",
+            "--model",
+            "granite4.1:3b",
+            "--system-prompt-file",
+            str(policy_path),
+            "--output",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["output"] == "policy applied"
+    assert observed["messages"] == [
+        {"role": "system", "content": "Stay inside ENDI support scope."},
+        {"role": "user", "content": "Hello"},
+    ]
+
+
+def test_system_prompt_file_errors_are_structured(tmp_path) -> None:
+    missing_policy = tmp_path / "missing.md"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app,
+        [
+            "chat",
+            "Hello",
+            "--system-prompt-file",
+            str(missing_policy),
+            "--output",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 1
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "error"
+    assert payload["route"] == "validation_error"
+    assert payload["validation_error"]["code"] == "target_policy_missing"
+    assert str(missing_policy) not in result.stdout
+    assert "Traceback" not in result.stdout

@@ -22,29 +22,33 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Phase 1: Setup
 
-- [ ] T001 Create replay module files in `ares/src/replay/`
-- [ ] T002 Verify runner/evaluator/report result types are available
-- [ ] T003 Verify `.specify/specs/018-endi-target-policy-mitigation/` exists and defines ENDI-owned target policy/system prompt mitigation under `endi/`
+- [x] T001 Create replay module files in `ares/src/replay/`
+- [x] T002 Verify runner/evaluator/report result types are available
+- [x] T003 Verify `.specify/specs/018-endi-target-policy-mitigation/` exists and defines ENDI-owned target policy/system prompt mitigation under `endi/`
 
 ## Phase 2: User Story 1 - Compare Baseline and Mitigated Runs (P1)
 
-- [ ] T004 [TDD-RED] Add comparison tests for closed, reduced, unchanged, regressed, missing baseline, and execution-error cases in `ares/tests/mitigation_replay.rs`
-- [ ] T005 [TDD-GREEN] Define `ReplayBaseline`, `ReplayCandidate`, `ReplayComparison`, and `MitigationStatus` in `ares/src/replay/mod.rs`
-- [ ] T006 [TDD-GREEN] Implement stable attack ID matching and decision comparison in `ares/src/replay/comparison.rs`
-- [ ] T007 [TDD-GREEN] Implement result-file loading or baseline handoff in `ares/src/replay/mod.rs`
-- [ ] T008 [TDD-GREEN] [US1] Record mitigation metadata identifying ENDI target policy/system prompt enforcement as the MVP mitigation in `ares/src/replay/mod.rs`
+- [x] T004 [TDD-RED] Add comparison tests for closed, reduced, unchanged, regressed, missing baseline, and execution-error cases in `ares/tests/mitigation_replay.rs`
+- [x] T005 [TDD-GREEN] Define `ReplayBaseline`, `ReplayCandidate`, `ReplayComparison`, and `MitigationStatus` in `ares/src/replay/mod.rs`
+- [x] T006 [TDD-GREEN] Implement stable attack ID matching and decision comparison in `ares/src/replay/comparison.rs`
+- [x] T007 [TDD-GREEN] Implement result-file loading or baseline handoff in `ares/src/replay/mod.rs`
+- [x] T008 [TDD-GREEN] [US1] Record mitigation metadata identifying ENDI target policy/system prompt enforcement as the MVP mitigation in `ares/src/replay/mod.rs`
 
 ## Phase 3: User Story 2 - Include Replay in Report (P2)
 
-- [ ] T009 [TDD-RED] Add report integration test for replay statuses in `ares/tests/mitigation_replay.rs`
-- [ ] T010 [TDD-GREEN] [US2] Expose replay comparison data to reporting module in `ares/src/replay/mod.rs`
-- [ ] T011 [TDD-GREEN] [US2] Add replay status section to Markdown report renderer in `ares/src/reporting/markdown.rs`
+- [x] T009 [TDD-RED] Add report integration test for replay statuses in `ares/tests/mitigation_replay.rs`
+- [x] T010 [TDD-GREEN] [US2] Expose replay comparison data to reporting module in `ares/src/replay/mod.rs`
+- [x] T011 [TDD-GREEN] [US2] Add replay status section to Markdown report renderer in `ares/src/reporting/markdown.rs`
 
 ## Phase 4: Validation
 
-- [ ] T012 [VALIDATE] Run `cargo fmt --all --check`
-- [ ] T013 [VALIDATE] Run `cargo clippy --workspace --all-targets --all-features`
-- [ ] T014 [VALIDATE] Run `cargo test --workspace`
+- [x] T012 [VALIDATE] Run `cargo fmt --all --check`
+- [x] T013 [VALIDATE] Run `cargo clippy --workspace --all-targets --all-features`
+- [x] T014 [VALIDATE] Run `cargo test --workspace`
+
+## Implementation Record
+
+- 2026-05-27: Added replay comparison model, ENDI target-policy mitigation metadata, stable attack-ID matching, status classification, and Markdown report integration. Red phase: `cargo test -p ares --test mitigation_replay` first failed because `ares::replay` and report replay fields were missing. Green phase passed after implementation. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
 
 ## Dependencies
 

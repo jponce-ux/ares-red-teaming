@@ -22,21 +22,25 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Phase 1: Setup
 
-- [ ] T001 Verify `.specify/specs/013-manual-attack-documentation/` exists
+- [x] T001 Verify `.specify/specs/013-manual-attack-documentation/` exists
 
 ## Phase 2: User Story 1 - Record Manual Attack Results (P1)
 
-- [ ] T002 [P] [US1] Create manual attack table template in `.specify/specs/013-manual-attack-documentation/manual-attacks.md`
-- [ ] T003 [US1] Add at least five safe manual attack cases with real ENDI responses across distinct categories in `.specify/specs/013-manual-attack-documentation/manual-attacks.md`
-- [ ] T004 [DOCS] Add required fields: ID, date/time, tester, category, attack prompt, ENDI command used, ENDI raw response, target rule under test, expected violation, observed result, decision, severity, evidence excerpt, and notes
-- [ ] T005 [VALIDATE] [US1] Review prompts and responses for no real secrets and no operationally harmful payloads in `.specify/specs/013-manual-attack-documentation/manual-attacks.md`
-- [ ] T006 [US1] Create `.specify/specs/013-manual-attack-documentation/reflection-checkpoints.md` with Reflection 1 after manual attacks and Reflection 2 after mitigation replay
+- [x] T002 [P] [US1] Create manual attack table template in `.specify/specs/013-manual-attack-documentation/manual-attacks.md`
+- [x] T003 [US1] Add at least five safe manual attack cases with real ENDI responses across distinct categories in `.specify/specs/013-manual-attack-documentation/manual-attacks.md`
+- [x] T004 [DOCS] Add required fields: ID, date/time, tester, category, attack prompt, ENDI command used, ENDI raw response, target rule under test, expected violation, observed result, decision, severity, evidence excerpt, and notes
+- [x] T005 [VALIDATE] [US1] Review prompts and responses for no real secrets and no operationally harmful payloads in `.specify/specs/013-manual-attack-documentation/manual-attacks.md`
+- [x] T006 [US1] Create `.specify/specs/013-manual-attack-documentation/reflection-checkpoints.md` with Reflection 1 after manual attacks and Reflection 2 after mitigation replay
 
 ## Phase 3: Validation
 
-- [ ] T007 Document whether Cargo validation is applicable for this documentation-only change
-- [ ] T008 [VALIDATE] Run available validation commands or record why they are not applicable
-- [ ] T009 [VALIDATE] Confirm no `TBD` values remain before declaring manual evidence or reflection deliverables complete
+- [x] T007 Document whether Cargo validation is applicable for this documentation-only change
+- [x] T008 [VALIDATE] Run available validation commands or record why they are not applicable
+- [x] T009 [VALIDATE] Confirm no `TBD` values remain before declaring manual evidence or reflection deliverables complete
+
+## Implementation Record
+
+- 2026-05-27: Added `manual-attacks.md` with five safe manual ENDI commands across system prompt extraction, prompt injection, jailbreak/role-play, malicious-code simulation, and out-of-domain categories. Commands were executed for real; local Ollama was unavailable, so each observation is `target_error` with severity `N/A`. Added `reflection-checkpoints.md` with Reflection 1 and Reflection 2. Cargo validation is not applicable to this documentation-only artifact, but prompts were reviewed to avoid real secrets and operationally harmful payload detail. Confirmed no `TBD` placeholders remain.
 
 ## Dependencies
 

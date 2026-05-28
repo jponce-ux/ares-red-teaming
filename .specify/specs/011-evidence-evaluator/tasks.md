@@ -22,30 +22,34 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Phase 1: Setup
 
-- [ ] T001 Create evaluator module files in `ares/src/evaluator/`
-- [ ] T002 Verify runner result/domain types are available
-- [ ] T003 [DOCS] Create deterministic evaluator heuristic matrix in `.specify/specs/011-evidence-evaluator/heuristic-matrix.md`
+- [x] T001 Create evaluator module files in `ares/src/evaluator/`
+- [x] T002 Verify runner result/domain types are available
+- [x] T003 [DOCS] Create deterministic evaluator heuristic matrix in `.specify/specs/011-evidence-evaluator/heuristic-matrix.md`
 
 ## Phase 2: User Story 1 - Preserve Attack Evidence (P1)
 
-- [ ] T004 [TDD-RED] Add evidence capture tests in `ares/tests/evaluator.rs`
-- [ ] T005 [TDD-GREEN] Define `EvidenceRecord` and evidence-retention behavior in `ares/src/evaluator/evidence.rs`
-- [ ] T006 [TDD-GREEN] [US1] Convert runner results into evidence records in `ares/src/evaluator/evidence.rs`
-- [ ] T007 [TDD-GREEN] Ensure tracing/logging redacts prompt/response unless controlled evidence output allows it
+- [x] T004 [TDD-RED] Add evidence capture tests in `ares/tests/evaluator.rs`
+- [x] T005 [TDD-GREEN] Define `EvidenceRecord` and evidence-retention behavior in `ares/src/evaluator/evidence.rs`
+- [x] T006 [TDD-GREEN] [US1] Convert runner results into evidence records in `ares/src/evaluator/evidence.rs`
+- [x] T007 [TDD-GREEN] Ensure tracing/logging redacts prompt/response unless controlled evidence output allows it
 
 ## Phase 3: User Story 2 - Evaluate Target Rule Violations (P2)
 
-- [ ] T008 [TDD-RED] Add heuristic tests for leakage, domain escape, malicious-code assistance, refusal, partial, inconclusive, target error, and harness error in `ares/tests/evaluator.rs`
-- [ ] T009 [TDD-GREEN] Define `EvaluatorDecision`/result status, `HeuristicMatch`, severity, and rationale types in `ares/src/evaluator/mod.rs`
-- [ ] T010 [TDD-GREEN] Implement deterministic heuristics in `ares/src/evaluator/heuristics.rs` using `.specify/specs/011-evidence-evaluator/heuristic-matrix.md`
-- [ ] T011 [TDD-GREEN] [US2] Assign severity only to `success` and `partial` results in `ares/src/evaluator/mod.rs`
-- [ ] T012 [TDD-GREEN] Implement category-specific success criteria from `.specify/specs/017-endi-target-profile-decisions/evaluator-success-criteria.md`
+- [x] T008 [TDD-RED] Add heuristic tests for leakage, domain escape, malicious-code assistance, refusal, partial, inconclusive, target error, and harness error in `ares/tests/evaluator.rs`
+- [x] T009 [TDD-GREEN] Define `EvaluatorDecision`/result status, `HeuristicMatch`, severity, and rationale types in `ares/src/evaluator/mod.rs`
+- [x] T010 [TDD-GREEN] Implement deterministic heuristics in `ares/src/evaluator/heuristics.rs` using `.specify/specs/011-evidence-evaluator/heuristic-matrix.md`
+- [x] T011 [TDD-GREEN] [US2] Assign severity only to `success` and `partial` results in `ares/src/evaluator/mod.rs`
+- [x] T012 [TDD-GREEN] Implement category-specific success criteria from `.specify/specs/017-endi-target-profile-decisions/evaluator-success-criteria.md`
 
 ## Phase 4: Validation
 
-- [ ] T013 [VALIDATE] Run `cargo fmt --all --check`
-- [ ] T014 [VALIDATE] Run `cargo clippy --workspace --all-targets --all-features`
-- [ ] T015 [VALIDATE] Run `cargo test --workspace`
+- [x] T013 [VALIDATE] Run `cargo fmt --all --check`
+- [x] T014 [VALIDATE] Run `cargo clippy --workspace --all-targets --all-features`
+- [x] T015 [VALIDATE] Run `cargo test --workspace`
+
+## Implementation Record
+
+- 2026-05-27: Added `EvidenceRecord`, `EvaluationDecision`, `EvaluationStatus`, `HeuristicMatch`, and deterministic heuristics for system prompt leakage, safe refusals, policy hints, malicious assistance, target errors, and harness errors. Red phase: `cargo test -p ares --test evaluator` first failed because `ares::evaluator` was missing. Green phase passed after implementation. Prompt/response redaction is controlled by evidence retention. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
 
 ## Dependencies
 

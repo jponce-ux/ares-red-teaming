@@ -1,0 +1,17 @@
+[endi.command]
+python_executable = "endi/.venv/bin/python"
+working_directory = "endi"
+timeout_seconds = 60
+
+[endi.target]
+provider = "ollama"
+model = "granite4.1:3b"
+base_url = "http://localhost:11434"
+output = "json"
+
+[runtime]
+max_concurrency = 1
+
+[evidence]
+output_directory = "ares/reports"
+retain_prompts = true

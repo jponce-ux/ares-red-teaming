@@ -22,22 +22,26 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Phase 1: Setup
 
-- [ ] T001 Verify attack domain schema exists in `ares/src/attacks/`
-- [ ] T002 Create system prompt extraction category module path in `ares/src/attacks/categories/`
+- [x] T001 Verify attack domain schema exists in `ares/src/attacks/`
+- [x] T002 Create system prompt extraction category module path in `ares/src/attacks/categories/`
 
 ## Phase 2: User Story 1 - Run System Prompt Extraction Variants (P1)
 
-- [ ] T003 [TDD-RED] Add fixture validation tests in `ares/tests/system_prompt_extraction_attacks.rs`
-- [ ] T004 [TDD-RED] Add controlled execution tests with mocked ENDI adapter in `ares/tests/system_prompt_extraction_attacks.rs`
-- [ ] T005 [US1] Create three to five system prompt extraction variants in `ares/fixtures/attacks/system_prompt_extraction.jsonl`
-- [ ] T006 [TDD-GREEN] Register system prompt extraction category loader in `ares/src/attacks/categories/system_prompt_extraction.rs`
-- [ ] T007 [TDD-GREEN] Ensure result metadata supports evaluator leakage checks in ARES runner-compatible output
+- [x] T003 [TDD-RED] Add fixture validation tests in `ares/tests/system_prompt_extraction_attacks.rs`
+- [x] T004 [TDD-RED] Add controlled execution tests with mocked ENDI adapter in `ares/tests/system_prompt_extraction_attacks.rs`
+- [x] T005 [US1] Create three to five system prompt extraction variants in `ares/fixtures/attacks/system_prompt_extraction.jsonl`
+- [x] T006 [TDD-GREEN] Register system prompt extraction category loader in `ares/src/attacks/categories/system_prompt_extraction.rs`
+- [x] T007 [TDD-GREEN] Ensure result metadata supports evaluator leakage checks in ARES runner-compatible output
 
 ## Phase 3: Validation
 
-- [ ] T008 [VALIDATE] Run `cargo fmt --all --check`
-- [ ] T009 [VALIDATE] Run `cargo clippy --workspace --all-targets --all-features`
-- [ ] T010 [VALIDATE] Run `cargo test --workspace`
+- [x] T008 [VALIDATE] Run `cargo fmt --all --check`
+- [x] T009 [VALIDATE] Run `cargo clippy --workspace --all-targets --all-features`
+- [x] T010 [VALIDATE] Run `cargo test --workspace`
+
+## Implementation Record
+
+- 2026-05-27: Added system prompt extraction fixture variants, category loader, fixture validation tests, and prepared attack metadata preserving prompt, category, target rule, and expected violation for leakage checks. Red phase initially failed on missing fixture path resolution; green phase passed after adding category loader and fixture path resolver. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
 
 ## Dependencies
 

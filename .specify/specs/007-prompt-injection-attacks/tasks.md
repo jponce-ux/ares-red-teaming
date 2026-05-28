@@ -22,22 +22,26 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Phase 1: Setup
 
-- [ ] T001 Verify attack domain schema exists in `ares/src/attacks/`
-- [ ] T002 Create prompt injection category module path in `ares/src/attacks/categories/`
+- [x] T001 Verify attack domain schema exists in `ares/src/attacks/`
+- [x] T002 Create prompt injection category module path in `ares/src/attacks/categories/`
 
 ## Phase 2: User Story 1 - Run Prompt Injection Variants (P1)
 
-- [ ] T003 [TDD-RED] Add fixture validation tests in `ares/tests/prompt_injection_attacks.rs`
-- [ ] T004 [TDD-RED] Add controlled execution tests with mocked ENDI adapter in `ares/tests/prompt_injection_attacks.rs`
-- [ ] T005 [US1] Create three to five prompt injection variants in `ares/fixtures/attacks/prompt_injection.jsonl`
-- [ ] T006 [TDD-GREEN] Register prompt injection category loader in `ares/src/attacks/categories/prompt_injection.rs`
-- [ ] T007 [TDD-GREEN] Ensure execution results preserve prompt, response, category, target rule, and expected violation in ARES runner-compatible output
+- [x] T003 [TDD-RED] Add fixture validation tests in `ares/tests/prompt_injection_attacks.rs`
+- [x] T004 [TDD-RED] Add controlled execution tests with mocked ENDI adapter in `ares/tests/prompt_injection_attacks.rs`
+- [x] T005 [US1] Create three to five prompt injection variants in `ares/fixtures/attacks/prompt_injection.jsonl`
+- [x] T006 [TDD-GREEN] Register prompt injection category loader in `ares/src/attacks/categories/prompt_injection.rs`
+- [x] T007 [TDD-GREEN] Ensure execution results preserve prompt, response, category, target rule, and expected violation in ARES runner-compatible output
 
 ## Phase 3: Validation
 
-- [ ] T008 [VALIDATE] Run `cargo fmt --all --check`
-- [ ] T009 [VALIDATE] Run `cargo clippy --workspace --all-targets --all-features`
-- [ ] T010 [VALIDATE] Run `cargo test --workspace`
+- [x] T008 [VALIDATE] Run `cargo fmt --all --check`
+- [x] T009 [VALIDATE] Run `cargo clippy --workspace --all-targets --all-features`
+- [x] T010 [VALIDATE] Run `cargo test --workspace`
+
+## Implementation Record
+
+- 2026-05-27: Added prompt injection fixture variants, category loader, fixture validation tests, and prepared attack metadata preserving prompt, category, target rule, and expected violation. Red phase initially failed on missing fixture path resolution; green phase passed after adding category loader and fixture path resolver. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
 
 ## Dependencies
 

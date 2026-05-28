@@ -96,6 +96,50 @@ end-to-end tests. For cross-project ARES/ENDI work, add unit tests on each
 side of the contract where behavior changes, plus contract/integration tests
 for serialized subprocess input/output when applicable.
 
+## Git Branching and Sandbox Readiness
+
+Batch Spec Kit implementation work MUST create or switch to the intended
+feature branch before coding each active spec. Use the existing spec folder
+name as the exact branch name when the feature folder already exists, for
+example:
+
+```bash
+GIT_BRANCH_NAME=010-attack-runner-concurrency \
+  .specify/extensions/git/scripts/bash/create-new-feature.sh \
+  --json \
+  --allow-existing-branch \
+  --short-name attack-runner \
+  "Implement attack runner concurrency"
+```
+
+If branch creation fails with an error like:
+
+```text
+fatal: Unable to create '.git/index.lock': Read-only file system
+```
+
+then the current Codex session cannot write to Git metadata. Stop before
+implementation and ask the user to restart Codex with Git write access enabled
+for the repository. Do not continue a multi-feature implementation in the
+working tree when the user explicitly requested one branch per feature.
+
+To verify the environment before a batch run, execute:
+
+```bash
+git rev-parse --is-inside-work-tree
+git status --short --branch
+GIT_BRANCH_NAME=sandbox-git-write-check \
+  .specify/extensions/git/scripts/bash/create-new-feature.sh \
+  --json \
+  --allow-existing-branch \
+  --short-name git-write-check \
+  "Check git write access"
+```
+
+If the check branch is created successfully, switch back to the intended base
+branch and remove the temporary branch before starting feature work. If it
+fails, fix the Codex sandbox/permissions first.
+
 ## Security Defaults
 
 Use safe Rust. `unsafe` is prohibited unless a plan documents the need,

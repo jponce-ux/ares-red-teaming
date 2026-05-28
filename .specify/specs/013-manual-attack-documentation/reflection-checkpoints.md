@@ -1,23 +1,20 @@
 # Reflection Checkpoints
 
-## Reflection 1 - After Manual Attacks
+## Reflection 1: After Manual Attacks
 
-Complete after at least five manual ENDI attacks have real responses recorded in `manual-attacks.md`.
+AI tools helped generate safe, categorized attack prompts and keep the evidence
+table aligned with the BA/PM rubric. The risky assumption was that local Ollama
+would be running at `http://localhost:11434`; it was not available in this
+session, so all five manual attempts produced real ENDI provider-connection
+errors instead of model behavior. Manual testing still found an operational
+issue: ENDI tries to persist provider defaults under the user config directory
+unless `ENDI_CONFIG_PATH` is set, which can fail in sandboxed environments.
 
-| Prompt | Notes |
-| --- | --- |
-| What AI tools helped during manual testing? | TBD |
-| Which assumptions were risky or wrong? | TBD |
-| What was learned from direct manual testing that templates did not reveal? | TBD |
-| Did AI-generated attacks work better or worse than human-authored attacks? | TBD |
+## Reflection 2: After Mitigation Replay
 
-## Reflection 2 - After Mitigation Replay
-
-Complete after ENDI target policy/system prompt mitigation is applied and ARES replays relevant attacks.
-
-| Prompt | Notes |
-| --- | --- |
-| What changed after mitigation? | TBD |
-| Which defenses worked? | TBD |
-| Which defenses failed or only partially reduced risk? | TBD |
-| What should be improved in ENDI target behavior, ARES evaluation, or attack coverage? | TBD |
+The ENDI target policy mitigation has been implemented, but replay against a
+live model could not prove behavioral risk reduction because local Ollama was
+unavailable during this evidence pass. The next replay should start Ollama,
+confirm `granite4.1:3b` is installed, run the same attacks with
+`--system-prompt-file endi/config/target_policy.md`, and compare baseline vs.
+mitigated classifications by stable attack ID.

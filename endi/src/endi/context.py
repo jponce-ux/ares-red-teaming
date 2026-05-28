@@ -26,6 +26,7 @@ _SENSITIVE_EXACT_KEYS = {
     "request_text",
     "response_text",
     "secret",
+    "target_policy_content",
     "token",
     "user_input",
 }
@@ -140,4 +141,3 @@ def build_safe_session_snapshot(state: Mapping[str, object]) -> dict[str, object
 def build_safe_telemetry_payload(payload: Mapping[str, object]) -> dict[str, object]:
     """Build a telemetry-safe payload that keeps shape and correlation metadata."""
     return sanitize_for_telemetry(payload)
-

@@ -1,0 +1,6 @@
+# Rust workspace build output
+/target/
+
+# Python/cache artifacts at repository root
+/.mypy_cache/
+/.pytest_cache/
