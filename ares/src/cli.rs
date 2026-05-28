@@ -24,21 +24,51 @@ pub struct Cli {
 #[derive(Debug, Clone, Subcommand, PartialEq, Eq)]
 pub enum Command {
     Version,
-    Stress,
+    Stress(StressArgs),
+}
+
+#[derive(Debug, Clone, Parser, PartialEq, Eq)]
+pub struct StressArgs {
+    #[arg(long, default_value_t = 1)]
+    pub requests: usize,
+
+    #[arg(long, default_value_t = 1)]
+    pub concurrency: usize,
+
+    #[arg(long, default_value = "ARES safe ENDI stress health check")]
+    pub prompt: String,
+
+    #[arg(long, default_value = "endi/.venv/bin/python")]
+    pub python_executable: String,
+
+    #[arg(long, default_value = "endi")]
+    pub working_directory: String,
+
+    #[arg(long, default_value_t = 60)]
+    pub timeout_seconds: u64,
+
+    #[arg(long, default_value = "ollama")]
+    pub provider: String,
+
+    #[arg(long, default_value = "granite4.1:3b")]
+    pub model: String,
+
+    #[arg(long, default_value = "http://localhost:11434")]
+    pub base_url: String,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CliAction {
     Help,
     Version,
-    Stress,
+    Stress(StressArgs),
 }
 
 impl From<Option<Command>> for CliAction {
     fn from(command: Option<Command>) -> Self {
         match command {
             Some(Command::Version) => Self::Version,
-            Some(Command::Stress) => Self::Stress,
+            Some(Command::Stress(args)) => Self::Stress(args),
             None => Self::Help,
         }
     }
@@ -60,7 +90,7 @@ pub fn parse_action(args: &[String]) -> CliAction {
 
 #[cfg(test)]
 mod tests {
-    use super::{Cli, CliAction, HELP_TEXT, parse_action};
+    use super::{Cli, CliAction, HELP_TEXT, StressArgs, parse_action};
     use clap::Parser;
 
     #[test]
@@ -78,5 +108,34 @@ mod tests {
         let cli = Cli::parse_from(["ares", "--run-id", "run-custom", "stress"]);
 
         assert_eq!(cli.run_id.as_deref(), Some("run-custom"));
+    }
+
+    #[test]
+    fn stress_action_accepts_runtime_options() {
+        let action = parse_action(&[
+            "ares".to_string(),
+            "stress".to_string(),
+            "--requests".to_string(),
+            "4".to_string(),
+            "--concurrency".to_string(),
+            "2".to_string(),
+            "--prompt".to_string(),
+            "safe check".to_string(),
+        ]);
+
+        assert_eq!(
+            action,
+            CliAction::Stress(StressArgs {
+                requests: 4,
+                concurrency: 2,
+                prompt: "safe check".to_string(),
+                python_executable: "endi/.venv/bin/python".to_string(),
+                working_directory: "endi".to_string(),
+                timeout_seconds: 60,
+                provider: "ollama".to_string(),
+                model: "granite4.1:3b".to_string(),
+                base_url: "http://localhost:11434".to_string(),
+            })
+        );
     }
 }
