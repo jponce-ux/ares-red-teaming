@@ -1,8 +1,9 @@
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::{sync::mpsc, thread};
 
 use crate::attacks::domain::{AttackCase, AttackCategory, AttackId, RunId, TargetRule};
 use crate::targets::endi::{EndiClient, EndiCommandError, EndiCommandResult, ParsedEndiOutput};
+use tokio::sync::Semaphore;
+use tracing::{info, warn};
 
 pub trait EndiLikeClient: Clone {
     fn chat(&self, prompt: &str) -> Result<EndiCommandResult, EndiCommandError>;
@@ -82,6 +83,13 @@ where
     }
 
     fn execute_one(&self, attack: &AttackCase, run_id: &RunId) -> AttackRunResult {
+        info!(
+            run_id = %run_id.as_str(),
+            attack_id = %attack.id.as_str(),
+            category = ?attack.category,
+            target_rule = ?attack.target_rule,
+            "executing attack"
+        );
         match self.client.chat(&attack.prompt) {
             Ok(result) => AttackRunResult {
                 run_id: run_id.clone(),
@@ -128,32 +136,56 @@ where
             return self.run(attacks, config);
         }
 
-        let limit = config.max_concurrency.max(1);
-        let (sender, receiver) = mpsc::channel();
-        let mut handles = Vec::new();
-        let run_id = config.run_id.clone();
-
-        for chunk in attacks.chunks(limit) {
-            for attack in chunk {
-                let attack = attack.clone();
-                let client = self.client.clone();
-                let sender = sender.clone();
-                let run_id = run_id.clone();
-                handles.push(thread::spawn(move || {
-                    let runner = AttackRunner::new(client);
-                    let result = runner.execute_one(&attack, &run_id);
-                    let _ = sender.send(result);
-                }));
-            }
-            for handle in handles.drain(..) {
-                let _ = handle.join();
+        match tokio::runtime::Builder::new_multi_thread()
+            .enable_time()
+            .enable_io()
+            .build()
+        {
+            Ok(runtime) => runtime.block_on(self.run_bounded_async(attacks, config)),
+            Err(error) => {
+                warn!(error = %error, "falling back to sequential attack execution");
+                self.run(attacks, config)
             }
         }
-        drop(sender);
+    }
+
+    async fn run_bounded_async(&self, attacks: Vec<AttackCase>, config: RunConfig) -> AttackRun {
+        let limit = config.max_concurrency.max(1);
+        let semaphore = std::sync::Arc::new(Semaphore::new(limit));
+        let mut handles = Vec::with_capacity(attacks.len());
+        let run_id = config.run_id.clone();
+
+        for (index, attack) in attacks.into_iter().enumerate() {
+            let permit = semaphore
+                .clone()
+                .acquire_owned()
+                .await
+                .expect("semaphore remains open while runner owns it");
+            let client = self.client.clone();
+            let run_id = run_id.clone();
+            handles.push(tokio::spawn(async move {
+                let _permit = permit;
+                let runner = AttackRunner::new(client);
+                let result = runner.execute_one(&attack, &run_id);
+                (index, result)
+            }));
+        }
+
+        let mut indexed_results = Vec::with_capacity(handles.len());
+        for handle in handles {
+            match handle.await {
+                Ok(result) => indexed_results.push(result),
+                Err(error) => warn!(error = %error, "attack task failed to join"),
+            }
+        }
+        indexed_results.sort_by_key(|(index, _)| *index);
 
         AttackRun {
             run_id: config.run_id,
-            results: receiver.into_iter().collect(),
+            results: indexed_results
+                .into_iter()
+                .map(|(_, result)| result)
+                .collect(),
         }
     }
 }

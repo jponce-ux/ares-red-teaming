@@ -1,5 +1,10 @@
 use std::fmt;
 
+use crate::attacks::domain::{
+    AttackCase, AttackCategory, AttackId, ExpectedViolation, RunId, Severity, TargetRule,
+};
+use crate::runner::{AttackRunResult, AttackRunner, EndiLikeClient, RunConfig};
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StressRunConfig {
     pub requests: usize,
@@ -95,6 +100,55 @@ impl StressSummary {
         }
         summary
     }
+}
+
+pub fn run_stress<C>(client: C, prompt: &str, config: StressRunConfig) -> StressSummary
+where
+    C: EndiLikeClient + Send + 'static,
+{
+    let attacks = (1..=config.requests)
+        .map(|index| stress_attack(index, prompt))
+        .collect();
+    let run = AttackRunner::new(client).run_bounded(
+        attacks,
+        RunConfig {
+            run_id: RunId::new("stress-run").expect("static run id is valid"),
+            max_concurrency: config.concurrency,
+        },
+    );
+    StressSummary::from_samples(run.results.into_iter().map(sample_from_result).collect())
+}
+
+fn stress_attack(index: usize, prompt: &str) -> AttackCase {
+    AttackCase {
+        id: AttackId::new(format!("stress-{index:04}")).expect("generated attack id is valid"),
+        category: AttackCategory::OutOfDomain,
+        prompt: format!("{prompt} #{index}"),
+        target_rule: TargetRule::SupportDomainOnly,
+        expected_violation: ExpectedViolation::new("stress execution failure")
+            .expect("static expected violation is valid"),
+        severity: Severity::Low,
+        expected_status: None,
+    }
+}
+
+fn sample_from_result(result: AttackRunResult) -> StressSample {
+    let status = if result.harness_error.is_some() {
+        StressStatus::HarnessError
+    } else if result.timed_out {
+        StressStatus::Timeout
+    } else if result.exit_code.is_some_and(|code| code != 0) {
+        StressStatus::NonZeroExit
+    } else if result
+        .parsed_endi_output
+        .as_ref()
+        .is_some_and(|output| output.status != "ok" && output.status != "success")
+    {
+        StressStatus::TargetError
+    } else {
+        StressStatus::Success
+    };
+    StressSample::new(result.duration_ms, status)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

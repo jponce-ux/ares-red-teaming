@@ -48,7 +48,7 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Implementation Record
 
-- 2026-05-27: Added typed attack domain model, JSONL fixture loader and validation, MVP fixtures under `ares/fixtures/attacks/`, and `ares/fixtures/targets/endi_support.toml`. Red phase: `cargo test -p ares attacks::fixture` first failed because domain types and loader were missing. Green phase passed after implementation. serde/thiserror dependency task was satisfied with std-only equivalents because dependency downloads are unavailable. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
+- 2026-05-27: Added typed attack domain model, JSONL fixture loader and validation, MVP fixtures under `ares/fixtures/attacks/`, and `ares/fixtures/targets/endi_support.toml`. Red phase: `cargo test -p ares attacks::fixture` first failed because domain types and loader were missing. Green phase passed after implementation. Follow-up pass migrated fixture/domain serialization to `serde`, `serde_json`, and `thiserror` while preserving strict duplicate-ID and invalid-enum validation. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace --all-features`.
 
 ## Dependencies
 

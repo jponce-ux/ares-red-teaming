@@ -43,7 +43,7 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Implementation Record
 
-- 2026-05-27: Added stress run config, target defaults, sample statuses, summary aggregation, and CLI action recognition for `stress`. Red phase: `cargo test -p ares --test stress_mode` first failed because `ares::stress` was missing. Green phase passed after implementation. Tokio execution was implemented as dependency-free stress primitives because dependency downloads are unavailable; runner bounded execution provides the std-thread execution path. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
+- 2026-05-27: Added stress run config, target defaults, sample statuses, summary aggregation, and CLI action recognition for `stress`. Red phase: `cargo test -p ares --test stress_mode` first failed because `ares::stress` was missing. A follow-up red phase added `stress_mode_executes_repeated_prompts_through_endi_contract`, which first failed because `run_stress` was missing. Green phase implemented stress execution through the ENDI contract and Tokio-backed bounded runner, mapping timeout, non-zero exit, target-error, harness-error, and success samples into a summary. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace --all-features`.
 
 ## Dependencies
 

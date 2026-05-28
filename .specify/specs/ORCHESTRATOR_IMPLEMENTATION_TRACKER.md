@@ -127,6 +127,6 @@ Notes / blockers:
 ## Known Blockers to Watch
 
 - `013` has real ENDI command evidence; local Ollama was unavailable, so observations are target_error rather than behavioral vulnerability evidence.
-- Branch creation via `speckit-git-feature` was attempted, but `.git/index.lock` is read-only in this sandbox, so implementation proceeded in the working tree.
-- External Rust dependencies could not be fetched because `index.crates.io` DNS resolution is blocked; ARES implementations use std-only equivalents for this pass.
+- Branch creation was verified with the Spec Kit feature script in the current session and implementation continued on `003-ares-rust-cli-scaffold`.
+- External Rust dependencies are now available; the previous std-only ARES fallbacks have been migrated to the intended Cargo dependencies for CLI parsing, config/fixture parsing, Tokio process/runner execution, typed errors, and tracing setup.
 - Behavioral manual/replay proof still needs a live local Ollama server with `granite4.1:3b`; current manual evidence proves harness behavior and target connection failure handling.

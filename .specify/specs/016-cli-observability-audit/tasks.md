@@ -49,7 +49,7 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Implementation Record
 
-- 2026-05-27: Added std-only observability module with typed run IDs, safe structured events, redaction policy, and default prompt/response redaction. Red phase: `cargo test -p ares --test observability` first failed because `ares::observability` was missing. Green phase passed after implementation. tracing-subscriber dependency task was satisfied with dependency-free event construction because dependency downloads are unavailable. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
+- 2026-05-27: Added observability module with typed run IDs, safe structured events, redaction policy, and default prompt/response redaction. Red phase: `cargo test -p ares --test observability` first failed because `ares::observability` was missing. Green phase passed after implementation. Follow-up pass added `tracing-subscriber` initialization in the CLI entrypoint and structured `tracing` instrumentation in the ENDI adapter and attack runner without raw prompt/response leakage by default. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace --all-features`.
 
 ## Dependencies
 

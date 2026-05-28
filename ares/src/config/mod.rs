@@ -1,29 +1,34 @@
-use std::collections::BTreeMap;
-use std::fmt;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+use serde::Deserialize;
+use thiserror::Error;
+
+#[derive(Debug, Clone, Default, Deserialize, PartialEq, Eq)]
+#[serde(default)]
 pub struct AresConfig {
     pub endi: EndiConfig,
     pub runtime: RuntimeLimits,
     pub evidence: EvidenceConfig,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Deserialize, PartialEq, Eq)]
+#[serde(default)]
 pub struct EndiConfig {
     pub command: EndiCommandConfig,
     pub target: EndiTargetConfig,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(default)]
 pub struct EndiCommandConfig {
     pub python_executable: String,
     pub working_directory: String,
     pub timeout_seconds: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(default)]
 pub struct EndiTargetConfig {
     pub provider: String,
     pub model: String,
@@ -31,12 +36,14 @@ pub struct EndiTargetConfig {
     pub output: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(default)]
 pub struct RuntimeLimits {
     pub max_concurrency: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(default)]
 pub struct EvidenceConfig {
     pub output_directory: String,
     pub retain_prompts: bool,
@@ -51,110 +58,56 @@ pub struct CliConfigOverrides {
     pub output_directory: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ConfigError {
-    messages: Vec<String>,
+#[derive(Debug, Error)]
+pub enum ConfigError {
+    #[error("failed to read config: {0}")]
+    Read(#[from] std::io::Error),
+    #[error("failed to parse TOML config: {0}")]
+    Parse(#[from] toml::de::Error),
+    #[error("invalid config: {0}")]
+    Validation(String),
 }
 
-impl ConfigError {
-    fn new(message: impl Into<String>) -> Self {
-        Self {
-            messages: vec![message.into()],
-        }
-    }
-
-    fn validation(messages: Vec<String>) -> Self {
-        Self { messages }
-    }
-}
-
-impl fmt::Display for ConfigError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(&self.messages.join("; "))
-    }
-}
-
-impl std::error::Error for ConfigError {}
-
-impl Default for AresConfig {
+impl Default for EndiCommandConfig {
     fn default() -> Self {
         Self {
-            endi: EndiConfig {
-                command: EndiCommandConfig {
-                    python_executable: "endi/.venv/bin/python".to_string(),
-                    working_directory: "endi".to_string(),
-                    timeout_seconds: 60,
-                },
-                target: EndiTargetConfig {
-                    provider: "ollama".to_string(),
-                    model: "granite4.1:3b".to_string(),
-                    base_url: "http://localhost:11434".to_string(),
-                    output: "json".to_string(),
-                },
-            },
-            runtime: RuntimeLimits { max_concurrency: 1 },
-            evidence: EvidenceConfig {
-                output_directory: "ares/reports".to_string(),
-                retain_prompts: true,
-            },
+            python_executable: "endi/.venv/bin/python".to_string(),
+            working_directory: "endi".to_string(),
+            timeout_seconds: 60,
+        }
+    }
+}
+
+impl Default for EndiTargetConfig {
+    fn default() -> Self {
+        Self {
+            provider: "ollama".to_string(),
+            model: "granite4.1:3b".to_string(),
+            base_url: "http://localhost:11434".to_string(),
+            output: "json".to_string(),
+        }
+    }
+}
+
+impl Default for RuntimeLimits {
+    fn default() -> Self {
+        Self { max_concurrency: 1 }
+    }
+}
+
+impl Default for EvidenceConfig {
+    fn default() -> Self {
+        Self {
+            output_directory: "ares/reports".to_string(),
+            retain_prompts: true,
         }
     }
 }
 
 impl AresConfig {
     pub fn load_from_file(path: &Path) -> Result<Self, ConfigError> {
-        let content = fs::read_to_string(path)
-            .map_err(|error| ConfigError::new(format!("failed to read config: {error}")))?;
-        let mut config = Self::default();
-        let values = parse_flat_toml(&content)?;
-
-        set_string(
-            &mut config.endi.command.python_executable,
-            &values,
-            "endi.command.python_executable",
-        );
-        set_string(
-            &mut config.endi.command.working_directory,
-            &values,
-            "endi.command.working_directory",
-        );
-        set_u64(
-            &mut config.endi.command.timeout_seconds,
-            &values,
-            "endi.command.timeout_seconds",
-        )?;
-        set_string(
-            &mut config.endi.target.provider,
-            &values,
-            "endi.target.provider",
-        );
-        set_string(&mut config.endi.target.model, &values, "endi.target.model");
-        set_string(
-            &mut config.endi.target.base_url,
-            &values,
-            "endi.target.base_url",
-        );
-        set_string(
-            &mut config.endi.target.output,
-            &values,
-            "endi.target.output",
-        );
-        set_usize(
-            &mut config.runtime.max_concurrency,
-            &values,
-            "runtime.max_concurrency",
-        )?;
-        set_string(
-            &mut config.evidence.output_directory,
-            &values,
-            "evidence.output_directory",
-        );
-        set_bool(
-            &mut config.evidence.retain_prompts,
-            &values,
-            "evidence.retain_prompts",
-        )?;
-
+        let content = fs::read_to_string(path)?;
+        let config: Self = toml::from_str(&content)?;
         config.validate()?;
         Ok(config)
     }
@@ -214,7 +167,7 @@ impl AresConfig {
         if errors.is_empty() {
             Ok(())
         } else {
-            Err(ConfigError::validation(errors))
+            Err(ConfigError::Validation(errors.join("; ")))
         }
     }
 }
@@ -223,81 +176,4 @@ fn require_non_empty(errors: &mut Vec<String>, field: &str, value: &str) {
     if value.trim().is_empty() {
         errors.push(format!("{field} must not be empty"));
     }
-}
-
-fn parse_flat_toml(content: &str) -> Result<BTreeMap<String, String>, ConfigError> {
-    let mut section = String::new();
-    let mut values = BTreeMap::new();
-    for raw_line in content.lines() {
-        let line = raw_line.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        if line.starts_with('[') && line.ends_with(']') {
-            section = line
-                .trim_start_matches('[')
-                .trim_end_matches(']')
-                .to_string();
-            continue;
-        }
-        let Some((key, raw_value)) = line.split_once('=') else {
-            return Err(ConfigError::new(format!("invalid config line: {line}")));
-        };
-        let full_key = if section.is_empty() {
-            key.trim().to_string()
-        } else {
-            format!("{}.{}", section, key.trim())
-        };
-        values.insert(full_key, clean_value(raw_value));
-    }
-    Ok(values)
-}
-
-fn clean_value(raw: &str) -> String {
-    raw.trim().trim_matches('"').to_string()
-}
-
-fn set_string(target: &mut String, values: &BTreeMap<String, String>, key: &str) {
-    if let Some(value) = values.get(key) {
-        *target = value.clone();
-    }
-}
-
-fn set_u64(
-    target: &mut u64,
-    values: &BTreeMap<String, String>,
-    key: &str,
-) -> Result<(), ConfigError> {
-    if let Some(value) = values.get(key) {
-        *target = value
-            .parse()
-            .map_err(|_| ConfigError::new(format!("{key} must be an integer")))?;
-    }
-    Ok(())
-}
-
-fn set_usize(
-    target: &mut usize,
-    values: &BTreeMap<String, String>,
-    key: &str,
-) -> Result<(), ConfigError> {
-    if let Some(value) = values.get(key) {
-        *target = value
-            .parse()
-            .map_err(|_| ConfigError::new(format!("{key} must be an integer")))?;
-    }
-    Ok(())
-}
-
-fn set_bool(
-    target: &mut bool,
-    values: &BTreeMap<String, String>,
-    key: &str,
-) -> Result<(), ConfigError> {
-    if let Some(value) = values.get(key) {
-        *target = value
-            .parse()
-            .map_err(|_| ConfigError::new(format!("{key} must be true or false")))?;
-    }
-    Ok(())
 }

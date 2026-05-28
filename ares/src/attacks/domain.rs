@@ -1,6 +1,9 @@
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
 pub struct AttackId(String);
 
 impl AttackId {
@@ -18,7 +21,22 @@ impl AttackId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl TryFrom<String> for AttackId {
+    type Error = DomainParseError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
+impl From<AttackId> for String {
+    fn from(value: AttackId) -> Self {
+        value.0
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
 pub struct RunId(String);
 
 impl RunId {
@@ -30,9 +48,28 @@ impl RunId {
             Ok(Self(value))
         }
     }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+impl TryFrom<String> for RunId {
+    type Error = DomainParseError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
+impl From<RunId> for String {
+    fn from(value: RunId) -> Self {
+        value.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum AttackCategory {
     PromptInjection,
     JailbreakRoleplay,
@@ -54,12 +91,17 @@ impl AttackCategory {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TargetRule {
+    #[serde(rename = "R1_SYSTEM_PROMPT_CONFIDENTIALITY")]
     SystemPromptConfidentiality,
+    #[serde(rename = "R2_NO_MALICIOUS_CODE")]
     NoMaliciousCode,
+    #[serde(rename = "R3_SUPPORT_DOMAIN_ONLY")]
     SupportDomainOnly,
+    #[serde(rename = "R4_NO_DESTRUCTIVE_ACTIONS_WITHOUT_CONFIRMATION")]
     NoDestructiveActionsWithoutConfirmation,
+    #[serde(rename = "R5_NO_FAKE_SECRETS_OR_INTERNAL_DATA")]
     NoFakeSecretsOrInternalData,
 }
 
@@ -80,7 +122,8 @@ impl TargetRule {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
 pub struct ExpectedViolation(String);
 
 impl ExpectedViolation {
@@ -100,7 +143,22 @@ impl ExpectedViolation {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+impl TryFrom<String> for ExpectedViolation {
+    type Error = DomainParseError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
+impl From<ExpectedViolation> for String {
+    fn from(value: ExpectedViolation) -> Self {
+        value.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Severity {
     Critical,
     High,
@@ -120,7 +178,8 @@ impl Severity {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ResultStatus {
     Blocked,
     Success,
@@ -146,7 +205,7 @@ impl ResultStatus {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AttackCase {
     pub id: AttackId,
     pub category: AttackCategory,

@@ -53,7 +53,7 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Implementation Record
 
-- 2026-05-27: Added `ares::targets::endi` with `EndiClient`, execution config, command result, parsed ENDI JSON envelope fields, environment validation, chat/submit/version methods, stdout/stderr/exit/duration/timeout capture, and default Ollama granite4.1:3b options. Red phase: `cargo test -p ares --test endi_adapter` first failed because the public module was missing. Green phase passed after implementation. Tokio/tracing dependency tasks were implemented as std-only equivalents because the sandbox cannot resolve `index.crates.io`; this deviation is recorded for follow-up when dependency access is available. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
+- 2026-05-27: Added `ares::targets::endi` with `EndiClient`, execution config, command result, parsed ENDI JSON envelope fields, environment validation, chat/submit/version methods, stdout/stderr/exit/duration/timeout capture, and default Ollama granite4.1:3b options. Red phase: `cargo test -p ares --test endi_adapter` first failed because the public module was missing. Green phase passed after implementation. Follow-up pass migrated the adapter to `tokio::process`, Tokio timeout handling, `thiserror`, `serde_json`, and prompt-redacted `tracing` instrumentation. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace --all-features`.
 
 ## Dependencies
 

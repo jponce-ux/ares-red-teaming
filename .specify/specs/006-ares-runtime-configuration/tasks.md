@@ -47,7 +47,7 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Implementation Record
 
-- 2026-05-27: Added offline config loading under `ares/src/config/`, example TOML at `ares/config/ares.example.toml`, official ENDI target defaults, validation, and override merge logic. Red phase: `cargo test -p ares --test config_loading` first failed because `ares::config` was missing. Green phase passed after implementation. Config dependency task was satisfied with a std-only parser because dependency downloads are unavailable in this sandbox. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
+- 2026-05-27: Added config loading under `ares/src/config/`, example TOML at `ares/config/ares.example.toml`, official ENDI target defaults, validation, and override merge logic. Red phase: `cargo test -p ares --test config_loading` first failed because `ares::config` was missing. Green phase passed after implementation. Follow-up pass migrated parsing/errors to `toml`, `serde`, and `thiserror`, including partial-section defaults and explicit validation errors. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace --all-features`.
 
 ## Dependencies
 

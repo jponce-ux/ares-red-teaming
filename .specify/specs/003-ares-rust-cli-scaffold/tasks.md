@@ -46,7 +46,7 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Implementation Record
 
-- 2026-05-27: Created root Cargo workspace, validated `ares/` has no nested Git repo, added ARES module directories, implemented a dependency-free CLI help/version scaffold, and documented quality gates in `ares/README.md`. Red phase: `cargo test -p ares cli_help_shows_ares_entrypoint` first failed because help output was still `Hello, world!`; after implementation `cargo test -p ares cli` passed. A first attempt with planned external crates failed because the sandbox cannot resolve `index.crates.io`; production scaffold was kept std-only for offline validation. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
+- 2026-05-27: Created root Cargo workspace, validated `ares/` has no nested Git repo, added ARES module directories, implemented CLI help/version/stress action parsing, and documented quality gates in `ares/README.md`. Red phase: `cargo test -p ares cli_help_shows_ares_entrypoint` first failed because help output was still `Hello, world!`; after implementation `cargo test -p ares cli` passed. Follow-up pass added the official scaffold dependencies (`clap`, `anyhow`, `tracing`, `tracing-subscriber`) and initialized tracing in `ares/src/main.rs`. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace --all-features`.
 
 ## Dependencies
 

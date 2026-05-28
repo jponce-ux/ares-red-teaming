@@ -50,7 +50,7 @@ For every `[TDD-RED]` task, execution MUST include two recorded steps before any
 
 ## Implementation Record
 
-- 2026-05-27: Added `AttackRunner`, `RunConfig`, `AttackRun`, `AttackRunResult`, `EndiLikeClient`, sequential execution, failure continuation, bounded std-thread execution, timeout flag propagation, and metadata capture. Red phases: `cargo test -p ares --test attack_runner` first failed because `ares::runner` was missing; `cargo test -p ares --test runner_concurrency` first failed because `run_bounded` was missing. Green phases passed after implementation. Tokio/tracing tasks were implemented as std-only bounded execution because dependency downloads are unavailable. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features`, `cargo test --workspace`.
+- 2026-05-27: Added `AttackRunner`, `RunConfig`, `AttackRun`, `AttackRunResult`, `EndiLikeClient`, sequential execution, failure continuation, bounded execution, timeout flag propagation, and metadata capture. Red phases: `cargo test -p ares --test attack_runner` first failed because `ares::runner` was missing; `cargo test -p ares --test runner_concurrency` first failed because `run_bounded` was missing. Green phases passed after implementation. Follow-up pass migrated bounded execution to Tokio with a semaphore, stable result ordering, and structured `tracing` events around attack execution. Final validation passed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace --all-features`.
 
 ## Dependencies
 

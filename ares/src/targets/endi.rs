@@ -1,8 +1,12 @@
-use std::fmt;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
-use std::thread;
+use std::process::Stdio;
 use std::time::{Duration, Instant, SystemTime};
+
+use serde::Deserialize;
+use thiserror::Error;
+use tokio::process::Command;
+use tokio::time;
+use tracing::{instrument, warn};
 
 #[derive(Debug, Clone)]
 pub struct EndiExecutionConfig {
@@ -29,7 +33,7 @@ impl Default for EndiExecutionConfig {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct ParsedEndiOutput {
     pub route: String,
     pub output: Option<String>,
@@ -48,30 +52,21 @@ pub struct EndiCommandResult {
     pub parsed_output: Option<ParsedEndiOutput>,
 }
 
-#[derive(Debug)]
-pub struct EndiCommandError {
-    message: String,
+#[derive(Debug, Error)]
+pub enum EndiCommandError {
+    #[error("failed to start ENDI command: {0}")]
+    Start(std::io::Error),
+    #[error("failed to execute ENDI command: {0}")]
+    Execute(std::io::Error),
+    #[error("{0}")]
+    Message(String),
 }
 
 impl EndiCommandError {
-    fn new(message: impl Into<String>) -> Self {
-        Self {
-            message: message.into(),
-        }
-    }
-
     pub fn new_for_test(message: impl Into<String>) -> Self {
-        Self::new(message)
+        Self::Message(message.into())
     }
 }
-
-impl fmt::Display for EndiCommandError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(&self.message)
-    }
-}
-
-impl std::error::Error for EndiCommandError {}
 
 #[derive(Debug, Clone)]
 pub struct EndiEnvironmentStatus {
@@ -129,46 +124,33 @@ impl EndiClient {
     }
 
     fn run(&self, args: Vec<String>) -> Result<EndiCommandResult, EndiCommandError> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .enable_io()
+            .build()
+            .map_err(EndiCommandError::Start)?
+            .block_on(self.run_async(args))
+    }
+
+    #[instrument(skip(self, args), fields(prompt = "redacted"))]
+    async fn run_async(&self, args: Vec<String>) -> Result<EndiCommandResult, EndiCommandError> {
         let started_at = SystemTime::now();
         let started = Instant::now();
         let command_string = command_string(&self.config.python_executable, &args);
-        let mut child = Command::new(&self.config.python_executable)
+        let mut command = Command::new(&self.config.python_executable);
+        command
             .args(&args)
             .current_dir(&self.config.working_directory)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|error| {
-                EndiCommandError::new(format!("failed to start ENDI command: {error}"))
-            })?;
+            .kill_on_drop(true);
 
-        loop {
-            if child
-                .try_wait()
-                .map_err(|error| {
-                    EndiCommandError::new(format!("failed to wait for ENDI: {error}"))
-                })?
-                .is_some()
-            {
-                let output = child.wait_with_output().map_err(|error| {
-                    EndiCommandError::new(format!("failed to collect ENDI output: {error}"))
-                })?;
-                let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-                return Ok(EndiCommandResult {
-                    command: command_string,
-                    stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-                    exit_code: output.status.code(),
-                    parsed_output: parse_endi_output(&stdout),
-                    stdout,
-                    started_at,
-                    duration_ms: started.elapsed().as_millis().max(1),
-                    timed_out: false,
-                });
-            }
-            if started.elapsed() >= self.config.timeout {
-                let _ = child.kill();
-                let _ = child.wait();
+        let output = match time::timeout(self.config.timeout, command.output()).await {
+            Ok(Ok(output)) => output,
+            Ok(Err(error)) => return Err(EndiCommandError::Start(error)),
+            Err(_) => {
+                warn!(command = %command_string, "ENDI command timed out");
                 return Ok(EndiCommandResult {
                     command: command_string,
                     stdout: String::new(),
@@ -180,8 +162,19 @@ impl EndiClient {
                     parsed_output: None,
                 });
             }
-            thread::sleep(Duration::from_millis(5));
-        }
+        };
+
+        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        Ok(EndiCommandResult {
+            command: command_string,
+            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            exit_code: output.status.code(),
+            parsed_output: parse_endi_output(&stdout),
+            stdout,
+            started_at,
+            duration_ms: started.elapsed().as_millis().max(1),
+            timed_out: false,
+        })
     }
 }
 
@@ -192,17 +185,5 @@ fn command_string(program: &std::path::Path, args: &[String]) -> String {
 }
 
 fn parse_endi_output(stdout: &str) -> Option<ParsedEndiOutput> {
-    Some(ParsedEndiOutput {
-        route: extract_json_string(stdout, "route")?,
-        output: extract_json_string(stdout, "output"),
-        status: extract_json_string(stdout, "status")?,
-    })
-}
-
-fn extract_json_string(input: &str, key: &str) -> Option<String> {
-    let needle = format!("\"{key}\":\"");
-    let start = input.find(&needle)? + needle.len();
-    let tail = &input[start..];
-    let end = tail.find('"')?;
-    Some(tail[..end].to_string())
+    serde_json::from_str(stdout).ok()
 }
